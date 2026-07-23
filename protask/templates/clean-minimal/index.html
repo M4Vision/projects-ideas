@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProTask</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #F9FAFB;
+    color: #111827;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  input, textarea, button { font-family: inherit; font-size: inherit; }
+  .hidden { display: none !important; }
+
+  nav {
+    display: flex;
+    gap: 0;
+    background: #FFFFFF;
+    border-bottom: 1px solid #E5E7EB;
+    padding: 0 32px;
+    height: 48px;
+    align-items: center;
+  }
+  nav .brand {
+    font-weight: 600;
+    font-size: 15px;
+    color: #4F46E5;
+    margin-right: 32px;
+    letter-spacing: -0.01em;
+  }
+  nav a {
+    text-decoration: none;
+    color: #6B7280;
+    font-weight: 500;
+    font-size: 13px;
+    padding: 0 16px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    border-bottom: 2px solid transparent;
+    transition: color 150ms ease, border-color 150ms ease;
+    cursor: pointer;
+  }
+  nav a:hover { color: #111827; }
+  nav a.active { color: #4F46E5; border-bottom-color: #4F46E5; }
+  nav a.danger { margin-left: auto; color: #EF4444; }
+  nav a.danger:hover { color: #DC2626; }
+
+  .page { display: none; padding: 40px 32px; max-width: 1200px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  .login-wrapper {
+    display: flex; justify-content: center; align-items: center;
+    min-height: calc(100vh - 48px - 80px);
+  }
+  .login-card {
+    background: #FFFFFF;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    padding: 40px;
+    width: 100%;
+    max-width: 400px;
+  }
+  .login-card .wordmark {
+    font-size: 28px;
+    font-weight: 600;
+    color: #4F46E5;
+    text-align: center;
+    margin-bottom: 32px;
+    letter-spacing: -0.02em;
+  }
+  .login-card .field { margin-bottom: 16px; }
+  .login-card label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 4px;
+  }
+  .login-card input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #E5E7EB;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+    background: #FFFFFF;
+    color: #111827;
+  }
+  .login-card input:focus {
+    border-color: #4F46E5;
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
+  }
+  .login-card .btn-primary {
+    width: 100%;
+    padding: 10px;
+    background: #4F46E5;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 150ms ease;
+    margin-top: 8px;
+  }
+  .login-card .btn-primary:hover { background: #4338CA; }
+  .login-card .toggle-link {
+    text-align: center;
+    margin-top: 16px;
+    color: #6B7280;
+    font-size: 13px;
+  }
+  .login-card .toggle-link a {
+    color: #4F46E5;
+    text-decoration: none;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .login-card .toggle-link a:hover { text-decoration: underline; }
+  .register-fields { display: none; }
+  .register-fields.show { display: block; }
+
+  .dash-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  .dash-header h1 { font-size: 20px; font-weight: 600; }
+  .dash-header .btn-ghost {
+    background: none; border: none; color: #4F46E5;
+    font-weight: 500; cursor: pointer; padding: 6px 12px;
+    border-radius: 6px; transition: background 150ms ease;
+  }
+  .dash-header .btn-ghost:hover { background: rgba(79,70,229,0.06); }
+  .board-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .board-card {
+    background: #FFFFFF;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    padding: 20px;
+    border-left: 3px solid #4F46E5;
+    cursor: pointer;
+    transition: box-shadow 150ms ease, transform 150ms ease;
+    position: relative;
+  }
+  .board-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); transform: translateY(-1px); }
+  .board-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .board-card .meta { font-size: 12px; color: #6B7280; }
+  .board-card .board-del {
+    position: absolute; top: 8px; right: 10px; color: #9CA3AF;
+    cursor: pointer; font-size: 16px; background: none; border: none;
+  }
+  .board-card .board-del:hover { color: #DC2626; }
+
+  .board-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  .board-top h1 { font-size: 20px; font-weight: 600; }
+  .board-top .right { display: flex; align-items: center; gap: 12px; }
+  .avatars { display: flex; }
+  .avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #E5E7EB; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 500; color: #6B7280;
+    margin-right: -6px; border: 2px solid #FFFFFF;
+  }
+  .avatar.primary { background: #4F46E5; color: #FFFFFF; }
+  .avatar.more { background: #F3F4F6; color: #9CA3AF; font-size: 10px; }
+  .board-top .btn-ghost {
+    background: none; border: 1px solid #E5E7EB; color: #374151;
+    font-weight: 500; cursor: pointer; padding: 6px 14px;
+    border-radius: 6px; font-size: 13px; transition: border-color 150ms ease;
+  }
+  .board-top .btn-ghost:hover { border-color: #4F46E5; color: #4F46E5; }
+  .columns {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+  .column {
+    background: #F3F4F6;
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .column h4 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6B7280;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  .task-card {
+    background: #FFFFFF;
+    border-radius: 6px;
+    padding: 14px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: box-shadow 150ms ease;
+  }
+  .task-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .task-card .label {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+    margin-right: 4px;
+  }
+  .task-card .title { font-size: 13px; font-weight: 500; margin-bottom: 8px; }
+  .task-card .footer {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 11px; color: #6B7280;
+  }
+  .task-card .footer .assignee {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: #4F46E5; color: #FFFFFF;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 600;
+  }
+  .task-card .footer .due-date { color: #9CA3AF; }
+
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.3);
+    align-items: center; justify-content: center;
+    z-index: 100;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: #FFFFFF; border-radius: 12px;
+    width: 100%; max-width: 480px; padding: 32px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal h2 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .modal .sub { color: #6B7280; font-size: 13px; margin-bottom: 20px; }
+  .modal .desc { font-size: 13px; color: #374151; margin-bottom: 20px; line-height: 1.6; }
+  .modal .comments-title { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+  .modal .comment { display: flex; gap: 10px; margin-bottom: 14px; }
+  .modal .comment .ca { width: 28px; height: 28px; border-radius: 50%; background: #E5E7EB; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; color: #6B7280; }
+  .modal .comment .cb { flex: 1; }
+  .modal .comment .cb strong { font-size: 13px; display: block; }
+  .modal .comment .cb span { font-size: 12px; color: #6B7280; }
+  .modal .close-btn {
+    background: none; border: none; color: #6B7280; cursor: pointer;
+    float: right; font-size: 20px; line-height: 1;
+  }
+  .modal .close-btn:hover { color: #111827; }
+
+  .settings-form { max-width: 560px; }
+  .settings-form h1 { font-size: 20px; font-weight: 600; margin-bottom: 24px; }
+  .settings-form .field { margin-bottom: 20px; }
+  .settings-form label {
+    display: block; font-size: 13px; font-weight: 500; color: #374151;
+    margin-bottom: 4px;
+  }
+  .settings-form input, .settings-form textarea {
+    width: 100%; padding: 10px 12px;
+    border: 1px solid #E5E7EB; border-radius: 6px; outline: none;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+    background: #FFFFFF; color: #111827;
+  }
+  .settings-form textarea { resize: vertical; min-height: 80px; }
+  .settings-form input:focus, .settings-form textarea:focus {
+    border-color: #4F46E5; box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
+  }
+  .settings-form .col-list { margin-bottom: 8px; }
+  .settings-form .col-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 0; border-bottom: 1px solid #F3F4F6;
+    font-size: 13px;
+  }
+  .settings-form .col-item .del { color: #9CA3AF; cursor: pointer; font-size: 16px; background: none; border: none; }
+  .settings-form .col-item .del:hover { color: #DC2626; }
+  .settings-form .btn-add {
+    background: none; border: none; color: #4F46E5; font-weight: 500;
+    cursor: pointer; padding: 4px 0; font-size: 13px;
+  }
+  .settings-form .btn-add:hover { text-decoration: underline; }
+  .settings-form .label-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+  .settings-form .label-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 500;
+  }
+  .settings-form .label-tag .del { cursor: pointer; font-size: 14px; opacity: 0.7; }
+  .settings-form .label-tag .del:hover { opacity: 1; }
+  .settings-form .btn-primary {
+    padding: 10px 24px; background: #4F46E5; color: #FFFFFF;
+    border: none; border-radius: 6px; font-weight: 500; cursor: pointer;
+    transition: background 150ms ease;
+  }
+  .settings-form .btn-primary:hover { background: #4338CA; }
+
+  .profile-wrap { max-width: 480px; }
+  .profile-wrap h1 { font-size: 20px; font-weight: 600; margin-bottom: 24px; }
+  .profile-avatar {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: #4F46E5; color: #FFFFFF;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; font-weight: 600; margin-bottom: 16px;
+  }
+  .profile-wrap .field { margin-bottom: 16px; }
+  .profile-wrap label {
+    display: block; font-size: 13px; font-weight: 500; color: #374151;
+    margin-bottom: 4px;
+  }
+  .profile-wrap input {
+    width: 100%; padding: 10px 12px;
+    border: 1px solid #E5E7EB; border-radius: 6px; outline: none;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+  }
+  .profile-wrap input:focus {
+    border-color: #4F46E5; box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
+  }
+  .profile-wrap .change-pw {
+    display: inline-block; color: #4F46E5; text-decoration: none;
+    font-size: 13px; font-weight: 500; margin-bottom: 20px; cursor: pointer;
+  }
+  .profile-wrap .change-pw:hover { text-decoration: underline; }
+  .profile-wrap .btn-primary {
+    padding: 10px 24px; background: #4F46E5; color: #FFFFFF;
+    border: none; border-radius: 6px; font-weight: 500; cursor: pointer;
+  }
+  .profile-wrap .btn-primary:hover { background: #4338CA; }
+
+  @media (min-width: 1440px) {
+    .page { max-width: 1360px; }
+  }
+  @media (max-width: 1023px) {
+    .page { padding: 28px 20px; }
+    .columns { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .board-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    nav { padding: 0 20px; }
+    .board-top h1 { font-size: 18px; }
+    .dash-header h1 { font-size: 18px; }
+    .settings-form h1, .profile-wrap h1 { font-size: 18px; }
+    .login-card { padding: 32px; }
+    .modal { padding: 24px; max-width: 440px; }
+  }
+  @media (max-width: 767px) {
+    body { font-size: 13px; }
+    nav {
+      flex-wrap: wrap; height: auto; padding: 0 12px;
+      overflow: visible;
+    }
+    nav .brand {
+      width: 100%; display: flex; align-items: center;
+      height: 44px; margin-right: 0;
+      border-bottom: 1px solid #E5E7EB;
+    }
+    nav a { height: 44px; padding: 0 12px; font-size: 12px; }
+    .columns { grid-template-columns: 1fr; }
+    .board-grid { grid-template-columns: 1fr; }
+    .page { padding: 20px 16px; }
+    .login-card { padding: 20px; }
+    .login-wrapper { min-height: calc(100vh - 100px); }
+    .login-card .wordmark { font-size: 24px; }
+    .modal {
+      margin: 8px; padding: 20px;
+      max-width: calc(100% - 16px); border-radius: 8px;
+    }
+    .dash-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .board-top { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .board-top .right { width: 100%; justify-content: space-between; }
+    .dash-header h1, .board-top h1, .settings-form h1, .profile-wrap h1 {
+      font-size: 17px;
+    }
+    .task-card { padding: 12px; }
+    .column { padding: 12px; }
+    .modal h2 { font-size: 15px; }
+  }
+</style>
+<script src="../../demo-api.js"></script>
+</head>
+<body>
+
+<nav id="mainNav">
+  <span class="brand">ProTask</span>
+  <a class="nav-auth" data-tab="dashboard" role="button" tabindex="0">Tableau de bord</a>
+  <a class="nav-auth" data-tab="board" role="button" tabindex="0">Board</a>
+  <a class="nav-auth" data-tab="settings" role="button" tabindex="0">Paramètres</a>
+  <a class="nav-auth" data-tab="profile" role="button" tabindex="0">Profil</a>
+  <a class="nav-auth danger" id="logoutBtn" role="button" tabindex="0">Déconnexion</a>
+</nav>
+
+<div class="page active" id="page-login">
+  <div class="login-wrapper">
+    <div class="login-card">
+      <div class="wordmark">ProTask</div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="loginEmail" placeholder="vous@exemple.fr">
+      </div>
+      <div class="field">
+        <label>Mot de passe</label>
+        <input type="password" id="loginPassword" placeholder="••••••••">
+      </div>
+      <div class="register-fields" id="registerFields">
+        <div class="field">
+          <label>Nom</label>
+          <input type="text" id="registerName" placeholder="Votre nom">
+        </div>
+        <div class="field">
+          <label>Confirmer le mot de passe</label>
+          <input type="password" id="registerConfirm" placeholder="••••••••">
+        </div>
+      </div>
+      <div id="loginError" style="color:#EF4444;font-size:13px;margin-bottom:8px;display:none;"></div>
+      <button class="btn-primary" id="authBtn">Se connecter</button>
+      <div class="toggle-link">
+        <span id="authToggleText">Pas de compte ?</span>
+        <a id="authToggleBtn">S'inscrire</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-dashboard">
+  <div class="dash-header">
+    <h1>Mes boards</h1>
+    <button class="btn-ghost" id="createBoardBtn">+ Nouveau board</button>
+  </div>
+  <div id="dashboardError" style="color:#EF4444;font-size:13px;margin-bottom:12px;display:none;"></div>
+  <div class="board-grid" id="boardGrid"></div>
+</div>
+
+<div class="page" id="page-board">
+  <div class="board-top">
+    <h1 id="boardTitle">Board</h1>
+    <div class="right">
+      <div class="avatars" id="boardAvatars"></div>
+      <button class="btn-ghost" id="inviteBtn">Inviter</button>
+    </div>
+  </div>
+  <div id="boardError" style="color:#EF4444;font-size:13px;margin-bottom:12px;display:none;"></div>
+  <div class="columns" id="boardColumns"></div>
+</div>
+
+<div class="page" id="page-settings">
+  <div class="settings-form">
+    <h1>Paramètres du board</h1>
+    <div id="settingsError" style="color:#EF4444;font-size:13px;margin-bottom:12px;display:none;"></div>
+    <div class="field">
+      <label>Nom du board</label>
+      <input type="text" id="settingsTitle">
+    </div>
+    <div class="field">
+      <label>Colonnes</label>
+      <div class="col-list" id="colList"></div>
+      <button class="btn-add" id="addColBtn">+ Ajouter une colonne</button>
+    </div>
+    <div class="field">
+      <label>Étiquettes</label>
+      <div class="label-tags" id="labelTags"></div>
+      <button class="btn-add" id="addLabelBtn">+ Ajouter une étiquette</button>
+    </div>
+    <button class="btn-primary" id="saveSettingsBtn">Sauvegarder</button>
+    <button class="btn-ghost" id="deleteBoardBtn" style="margin-left:12px;border:1px solid #FEE2E2;color:#DC2626;">Supprimer le board</button>
+  </div>
+</div>
+
+<div class="page" id="page-profile">
+  <div class="profile-wrap">
+    <h1>Profil</h1>
+    <div class="profile-avatar" id="profileAvatar">AL</div>
+    <div id="profileError" style="color:#EF4444;font-size:13px;margin-bottom:12px;display:none;"></div>
+    <div class="field">
+      <label>Nom</label>
+      <input type="text" id="profileName">
+    </div>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="profileEmail">
+    </div>
+    <div id="profilePwFields" style="display:none;">
+      <div class="field">
+        <label>Nouveau mot de passe</label>
+        <input type="password" id="profilePassword" placeholder="••••••••">
+      </div>
+    </div>
+    <a class="change-pw" id="togglePwBtn">Changer le mot de passe</a>
+    <button class="btn-primary" id="saveProfileBtn">Sauvegarder</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <button class="close-btn" onclick="closeModal()">&times;</button>
+    <h2 id="modalTitle"></h2>
+    <div class="sub" id="modalSub"></div>
+    <div class="desc" id="modalDesc"></div>
+    <div class="comments-title">Commentaires</div>
+    <div id="modalComments"></div>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <input type="text" id="commentInput" placeholder="Ajouter un commentaire..." style="flex:1;padding:8px 12px;border:1px solid #E5E7EB;border-radius:6px;outline:none;">
+      <button class="btn-primary" id="submitCommentBtn" style="padding:8px 16px;">Envoyer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+
+
+let mockData = {
+  users: [
+    { id: 1, name: 'Alexandre', email: 'alex@protask.dev', avatar: '', password: 'password123', createdAt: '2025-01-15T08:00:00Z' },
+    { id: 2, name: 'Sophie', email: 'sophie@protask.dev', avatar: '', password: 'password123', createdAt: '2025-02-20T10:30:00Z' },
+  ],
+  boards: [
+    { id: 1, title: 'Design System', ownerId: 1, createdAt: '2025-03-01T09:00:00Z', members: [2] },
+    { id: 2, title: 'Refonte App Mobile', ownerId: 1, createdAt: '2025-03-10T14:00:00Z', members: [] },
+    { id: 3, title: 'Projet Marketing Q2', ownerId: 2, createdAt: '2025-04-01T11:00:00Z', members: [1] },
+  ],
+  columns: [
+    { id: 1, title: 'À faire', order: 0, boardId: 1 },
+    { id: 2, title: 'En cours', order: 1, boardId: 1 },
+    { id: 3, title: 'Terminé', order: 2, boardId: 1 },
+    { id: 4, title: 'Backlog', order: 0, boardId: 2 },
+    { id: 5, title: 'En cours', order: 1, boardId: 2 },
+    { id: 6, title: 'Terminé', order: 2, boardId: 2 },
+  ],
+  cards: [
+    { id: 1, title: 'Définir la palette de couleurs', description: 'Choisir les couleurs primaires et secondaires pour le design system.', order: 0, columnId: 1, dueDate: '2025-04-15', assigneeId: 1, labels: [1] },
+    { id: 2, title: 'Créer les composants UI', description: 'Button, Input, Card, Modal en React.', order: 1, columnId: 1, dueDate: '2025-04-20', assigneeId: 2, labels: [1, 2] },
+    { id: 3, title: "Page d'accueil responsive", description: 'Terminer la mise en page responsive.', order: 0, columnId: 2, dueDate: '2025-04-10', assigneeId: 1, labels: [2] },
+    { id: 4, title: 'Documentation complète', description: 'Écrire la doc du design system.', order: 1, columnId: 3, dueDate: '2025-04-05', assigneeId: 2, labels: [3] },
+    { id: 5, title: 'Wireframes validés', description: 'Wireframes validés par le client.', order: 0, columnId: 4, dueDate: '2025-04-08', assigneeId: 1, labels: [2] },
+    { id: 6, title: 'Maquette Figma', description: 'Maquette haute fidélité.', order: 1, columnId: 5, dueDate: '2025-04-18', assigneeId: 1, labels: [1] },
+  ],
+  labels: [
+    { id: 1, name: 'Design', color: '#8B5CF6', boardId: 1 },
+    { id: 2, name: 'Dev', color: '#3B82F6', boardId: 1 },
+    { id: 3, name: 'Documentation', color: '#10B981', boardId: 1 },
+    { id: 4, name: 'Urgent', color: '#EF4444', boardId: 2 },
+  ],
+  comments: [
+    { id: 1, text: "J'ai commencé la palette, je propose du violet comme couleur principale.", authorId: 1, cardId: 1, createdAt: '2025-04-01T10:00:00Z' },
+    { id: 2, text: 'Bonne idée ! Je valide le violet.', authorId: 2, cardId: 1, createdAt: '2025-04-01T11:30:00Z' },
+    { id: 3, text: 'PR créé sur GitHub.', authorId: 1, cardId: 3, createdAt: '2025-04-02T09:00:00Z' },
+  ],
+  invitations: [
+    { id: 1, boardId: 1, email: 'marc@test.com', invitedById: 1, status: 'pending', createdAt: '2025-04-01T08:00:00Z' },
+  ],
+};
+
+let currentBoardId = null;
+let currentCardId = null;
+let isRegister = false;
+
+const api = demoApi;
+// Current user helper
+let currentUser = (typeof getCurrentUser === "function") ? getCurrentUser() : null;
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('nav a[data-tab]').forEach(a => a.classList.remove('active'));
+  var navLink = document.querySelector('nav a[data-tab="' + name + '"]');
+  if (navLink) navLink.classList.add('active');
+}
+
+function showError(id, msg) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
+}
+
+function formatDate(d) {
+  if (!d) return '';
+  var date = new Date(d);
+  return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+}
+
+function getInitials(name) {
+  if (!name) return '?';
+  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+}
+
+function navigateToBoard(id) {
+  currentBoardId = id;
+  showPage('board');
+  renderBoard();
+}
+
+// --- Auth ---
+async function handleAuth() {
+  var email = document.getElementById('loginEmail').value.trim();
+  var password = document.getElementById('loginPassword').value;
+  showError('loginError', '');
+  if (!email || !password) { showError('loginError', 'Veuillez remplir tous les champs.'); return; }
+  if (isRegister) {
+    var name = document.getElementById('registerName').value.trim();
+    var confirm = document.getElementById('registerConfirm').value;
+    if (!name) { showError('loginError', 'Veuillez entrer votre nom.'); return; }
+    if (password !== confirm) { showError('loginError', 'Les mots de passe ne correspondent pas.'); return; }
+    if (password.length < 8) { showError('loginError', 'Le mot de passe doit faire au moins 8 caractères.'); return; }
+    try {
+      await api.register({ name, email, password });
+    } catch (e) {
+      showError('loginError', e.message);
+      return;
+    }
+  } else {
+    try {
+      await api.login({ email, password });
+    } catch (e) {
+      showError('loginError', e.message);
+      return;
+    }
+  }
+  document.querySelectorAll('.nav-auth').forEach(a => a.classList.remove('hidden'));
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPassword').value = '';
+  if (isRegister) {
+    document.getElementById('registerName').value = '';
+    document.getElementById('registerConfirm').value = '';
+  }
+  showPage('dashboard');
+  renderDashboard();
+}
+
+function logout() {
+  currentUser = null;
+  currentBoardId = null;
+  document.querySelectorAll('.nav-auth').forEach(a => a.classList.add('hidden'));
+  showPage('login');
+}
+
+// --- Dashboard ---
+async function renderDashboard() {
+  showError('dashboardError', '');
+  var grid = document.getElementById('boardGrid');
+  grid.innerHTML = '<div style="grid-column:1/-1;color:#9CA3AF;text-align:center;padding:40px 0;">Chargement...</div>';
+  try {
+    var boards = await api.getBoards();
+    if (boards.length === 0) {
+      grid.innerHTML = '<div style="grid-column:1/-1;color:#9CA3AF;text-align:center;padding:40px 0;">Aucun board pour le moment. Créez-en un !</div>';
+      return;
+    }
+    grid.innerHTML = '';
+    boards.forEach(function(b) {
+      var colIds = mockData.columns.filter(c => c.boardId === b.id).map(c => c.id);
+      var cardCount = mockData.cards.filter(c => colIds.includes(c.columnId)).length;
+      var memberCount = 1 + (b.members ? b.members.length : 0);
+      var card = document.createElement('div');
+      card.className = 'board-card';
+      if (b.ownerId === currentUser.id) {
+        var del = document.createElement('button');
+        del.className = 'board-del';
+        del.textContent = '\u00d7';
+        del.onclick = function(e) {
+          e.stopPropagation();
+          if (confirm('Supprimer le board "' + b.title + '" ?')) {
+            api.deleteBoard(b.id).then(function() { renderDashboard(); });
+          }
+        };
+        card.appendChild(del);
+      }
+      var h3 = document.createElement('h3');
+      h3.textContent = b.title;
+      card.appendChild(h3);
+      var meta = document.createElement('div');
+      meta.className = 'meta';
+      meta.textContent = memberCount + ' membre' + (memberCount > 1 ? 's' : '') + ' \u00b7 ' + cardCount + ' carte' + (cardCount > 1 ? 's' : '');
+      card.appendChild(meta);
+      card.onclick = function() { navigateToBoard(b.id); };
+      grid.appendChild(card);
+    });
+  } catch (e) {
+    showError('dashboardError', e.message);
+    grid.innerHTML = '';
+  }
+}
+
+// --- Board ---
+async function renderBoard() {
+  showError('boardError', '');
+  if (!currentBoardId) { showPage('dashboard'); return; }
+  document.getElementById('boardColumns').innerHTML = '<div style="grid-column:1/-1;color:#9CA3AF;text-align:center;padding:40px 0;">Chargement...</div>';
+  try {
+    var board = await api.getBoard(currentBoardId);
+    document.getElementById('boardTitle').textContent = board.title;
+
+    // Avatars
+    var avatarContainer = document.getElementById('boardAvatars');
+    avatarContainer.innerHTML = '';
+    var owner = mockData.users.find(u => u.id === board.ownerId);
+    var userList = owner ? [owner] : [];
+    (board.members || []).forEach(function(mId) {
+      var m = mockData.users.find(u => u.id === mId);
+      if (m) userList.push(m);
+    });
+    var maxAvatars = 4;
+    userList.slice(0, maxAvatars).forEach(function(u) {
+      var div = document.createElement('div');
+      div.className = 'avatar' + (u.id === board.ownerId ? ' primary' : '');
+      div.textContent = getInitials(u.name);
+      div.title = u.name;
+      avatarContainer.appendChild(div);
+    });
+    if (userList.length > maxAvatars) {
+      var more = document.createElement('div');
+      more.className = 'avatar more';
+      more.textContent = '+' + (userList.length - maxAvatars);
+      avatarContainer.appendChild(more);
+    }
+
+    // Columns
+    var colsContainer = document.getElementById('boardColumns');
+    colsContainer.innerHTML = '';
+    var cols = board.columns || [];
+    for (var i = 0; i < cols.length; i++) {
+      var col = cols[i];
+      var colDiv = document.createElement('div');
+      colDiv.className = 'column';
+
+      var h4 = document.createElement('h4');
+      var cardsInCol = mockData.cards.filter(c => c.columnId === col.id).length;
+      h4.textContent = col.title + ' \u00b7 ' + cardsInCol;
+      colDiv.appendChild(h4);
+
+      var cards = await api.getCards(col.id);
+      cards.forEach(function(card) {
+        var cardDiv = document.createElement('div');
+        cardDiv.className = 'task-card';
+        cardDiv.onclick = function() { openCardModal(card.id); };
+
+        (card.labels || []).forEach(function(l) {
+          var span = document.createElement('span');
+          span.className = 'label';
+          span.textContent = l.name;
+          span.style.background = l.color + '22';
+          span.style.color = l.color;
+          cardDiv.appendChild(span);
+        });
+
+        var titleDiv = document.createElement('div');
+        titleDiv.className = 'title';
+        titleDiv.textContent = card.title;
+        cardDiv.appendChild(titleDiv);
+
+        var footer = document.createElement('div');
+        footer.className = 'footer';
+
+        var dateSpan = document.createElement('span');
+        dateSpan.className = 'due-date';
+        if (card.dueDate) {
+          dateSpan.textContent = formatDate(card.dueDate);
+        } else {
+          dateSpan.textContent = '';
+        }
+        footer.appendChild(dateSpan);
+
+        if (card.assignee) {
+          var aDiv = document.createElement('div');
+          aDiv.className = 'assignee';
+          aDiv.textContent = getInitials(card.assignee.name);
+          aDiv.title = card.assignee.name;
+          footer.appendChild(aDiv);
+        }
+
+        cardDiv.appendChild(footer);
+        colDiv.appendChild(cardDiv);
+      });
+
+      colsContainer.appendChild(colDiv);
+    }
+  } catch (e) {
+    showError('boardError', e.message);
+  }
+}
+
+// --- Invite ---
+function inviteMember() {
+  if (!currentBoardId) return;
+  var email = prompt('Email du membre à inviter :');
+  if (!email) return;
+  api.inviteMember(currentBoardId, email).then(function() {
+    alert('Invitation envoyée à ' + email);
+  }).catch(function(e) {
+    alert('Erreur : ' + e.message);
+  });
+}
+
+// --- Card Modal ---
+async function openCardModal(cardId) {
+  currentCardId = cardId;
+  document.getElementById('modalOverlay').classList.add('show');
+  document.getElementById('modalTitle').textContent = 'Chargement...';
+  document.getElementById('modalSub').textContent = '';
+  document.getElementById('modalDesc').textContent = '';
+  document.getElementById('modalComments').innerHTML = '';
+  document.getElementById('commentInput').value = '';
+
+  try {
+    var card = await api.getCard(cardId);
+    document.getElementById('modalTitle').textContent = card.title;
+
+    var colName = '';
+    var col = mockData.columns.find(c => c.id === card.columnId);
+    if (col) colName = col.title;
+
+    var subParts = [];
+    if (colName) subParts.push('Colonne: ' + colName);
+    if (card.dueDate) subParts.push('Échéance: ' + formatDate(card.dueDate));
+    if (card.assignee) subParts.push(getInitials(card.assignee.name));
+    document.getElementById('modalSub').textContent = subParts.join(' \u00b7 ');
+
+    if (card.description) {
+      document.getElementById('modalDesc').textContent = card.description;
+    } else {
+      document.getElementById('modalDesc').textContent = 'Aucune description.';
+    }
+
+    var commentsContainer = document.getElementById('modalComments');
+    commentsContainer.innerHTML = '';
+    (card.comments || []).forEach(function(c) {
+      var commentDiv = document.createElement('div');
+      commentDiv.className = 'comment';
+      var ca = document.createElement('div');
+      ca.className = 'ca';
+      ca.textContent = c.author ? getInitials(c.author.name) : '?';
+      commentDiv.appendChild(ca);
+      var cb = document.createElement('div');
+      cb.className = 'cb';
+      var strong = document.createElement('strong');
+      strong.textContent = c.author ? c.author.name : 'Inconnu';
+      cb.appendChild(strong);
+      var span = document.createElement('span');
+      span.textContent = c.text;
+      cb.appendChild(span);
+      commentDiv.appendChild(cb);
+      commentsContainer.appendChild(commentDiv);
+    });
+    if (card.comments.length === 0) {
+      commentsContainer.innerHTML = '<div style="color:#9CA3AF;font-size:13px;">Aucun commentaire pour le moment.</div>';
+    }
+  } catch (e) {
+    document.getElementById('modalTitle').textContent = 'Erreur';
+    document.getElementById('modalSub').textContent = e.message;
+  }
+}
+
+async function submitComment() {
+  var input = document.getElementById('commentInput');
+  var text = input.value.trim();
+  if (!text || !currentCardId) return;
+  input.disabled = true;
+  try {
+    await api.addComment(currentCardId, { text: text });
+    input.value = '';
+    openCardModal(currentCardId);
+  } catch (e) {
+    alert('Erreur : ' + e.message);
+  }
+  input.disabled = false;
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+  currentCardId = null;
+}
+
+// --- Settings ---
+async function renderSettings() {
+  showError('settingsError', '');
+  if (!currentBoardId) { showError('settingsError', 'Aucun board sélectionné.'); return; }
+  try {
+    var board = await api.getBoard(currentBoardId);
+    document.getElementById('settingsTitle').value = board.title;
+
+    var cols = board.columns || [];
+    var colList = document.getElementById('colList');
+    colList.innerHTML = '';
+    cols.forEach(function(col) {
+      var div = document.createElement('div');
+      div.className = 'col-item';
+      var nameSpan = document.createElement('span');
+      nameSpan.textContent = '\u25cf ' + col.title;
+      var delBtn = document.createElement('button');
+      delBtn.className = 'del';
+      delBtn.textContent = '\u00d7';
+      delBtn.onclick = function() {
+        if (confirm('Supprimer la colonne "' + col.title + '" ?')) {
+          api.deleteColumn(col.id).then(function() { renderSettings(); renderBoard(); });
+        }
+      };
+      div.appendChild(nameSpan);
+      div.appendChild(delBtn);
+      colList.appendChild(div);
+    });
+
+    var labels = await api.getLabels(currentBoardId);
+    var labelTags = document.getElementById('labelTags');
+    labelTags.innerHTML = '';
+    labels.forEach(function(l) {
+      var span = document.createElement('span');
+      span.className = 'label-tag';
+      span.style.background = l.color + '22';
+      span.style.color = l.color;
+      var text = document.createTextNode(l.name + ' ');
+      span.appendChild(text);
+      var delBtn = document.createElement('span');
+      delBtn.className = 'del';
+      delBtn.textContent = '\u00d7';
+      delBtn.onclick = function() {
+        if (confirm('Supprimer l\'étiquette "' + l.name + '" ?')) {
+          api.deleteLabel(l.id).then(function() { renderSettings(); });
+        }
+      };
+      span.appendChild(delBtn);
+      labelTags.appendChild(span);
+    });
+  } catch (e) {
+    showError('settingsError', e.message);
+  }
+}
+
+async function saveSettings() {
+  showError('settingsError', '');
+  if (!currentBoardId) return;
+  var title = document.getElementById('settingsTitle').value.trim();
+  if (!title) { showError('settingsError', 'Le nom du board est requis.'); return; }
+  try {
+    var updated = await api.updateBoard(currentBoardId, { title: title });
+    document.getElementById('settingsTitle').value = updated.title;
+    showError('settingsError', 'Board mis à jour.');
+    setTimeout(function() { showError('settingsError', ''); }, 2000);
+  } catch (e) {
+    showError('settingsError', e.message);
+  }
+}
+
+async function deleteCurrentBoard() {
+  if (!currentBoardId) return;
+  if (!confirm('Supprimer définitivement ce board et toutes ses données ?')) return;
+  try {
+    await api.deleteBoard(currentBoardId);
+    currentBoardId = null;
+    showPage('dashboard');
+    renderDashboard();
+  } catch (e) {
+    showError('settingsError', e.message);
+  }
+}
+
+function addColumn() {
+  if (!currentBoardId) return;
+  var title = prompt('Nom de la colonne :');
+  if (!title) return;
+  api.createColumn(currentBoardId, { title: title }).then(function() {
+    renderSettings();
+    renderBoard();
+  }).catch(function(e) {
+    showError('settingsError', e.message);
+  });
+}
+
+function addLabel() {
+  if (!currentBoardId) return;
+  var name = prompt('Nom de l\'étiquette :');
+  if (!name) return;
+  var color = prompt('Couleur (ex: #8B5CF6) :', '#3B82F6');
+  if (!color) return;
+  api.createLabel(currentBoardId, { name: name, color: color }).then(function() {
+    renderSettings();
+  }).catch(function(e) {
+    showError('settingsError', e.message);
+  });
+}
+
+// --- Profile ---
+async function renderProfile() {
+  showError('profileError', '');
+  try {
+    var user = await api.getMe();
+    document.getElementById('profileName').value = user.name;
+    document.getElementById('profileEmail').value = user.email;
+    document.getElementById('profileAvatar').textContent = getInitials(user.name);
+    document.getElementById('profilePassword').value = '';
+  } catch (e) {
+    showError('profileError', e.message);
+  }
+}
+
+function togglePwFields() {
+  var pwDiv = document.getElementById('profilePwFields');
+  pwDiv.style.display = pwDiv.style.display === 'none' ? 'block' : 'none';
+}
+
+async function saveProfile() {
+  showError('profileError', '');
+  var name = document.getElementById('profileName').value.trim();
+  var email = document.getElementById('profileEmail').value.trim();
+  var password = document.getElementById('profilePassword').value;
+  if (!name || !email) { showError('profileError', 'Le nom et l\'email sont requis.'); return; }
+  var data = { name: name, email: email };
+  if (password) {
+    if (password.length < 8) { showError('profileError', 'Le mot de passe doit faire au moins 8 caractères.'); return; }
+    data.password = password;
+  }
+  try {
+    var updated = await api.updateMe(data);
+    document.getElementById('profileAvatar').textContent = getInitials(updated.name);
+    document.getElementById('profilePassword').value = '';
+    document.getElementById('profilePwFields').style.display = 'none';
+    showError('profileError', 'Profil mis à jour.');
+    setTimeout(function() { showError('profileError', ''); }, 2000);
+  } catch (e) {
+    showError('profileError', e.message);
+  }
+}
+
+// --- Init ---
+document.querySelectorAll('nav a[data-tab]').forEach(function(link) {
+  link.addEventListener('click', function() {
+    var tab = this.getAttribute('data-tab');
+    showPage(tab);
+    if (tab === 'dashboard') renderDashboard();
+    if (tab === 'board' && currentBoardId) renderBoard();
+    if (tab === 'settings' && currentBoardId) renderSettings();
+    if (tab === 'profile') renderProfile();
+  });
+});
+
+document.getElementById('authBtn').addEventListener('click', handleAuth);
+
+document.getElementById('authToggleBtn').addEventListener('click', function() {
+  isRegister = !isRegister;
+  document.getElementById('registerFields').classList.toggle('show');
+  document.getElementById('authBtn').textContent = isRegister ? "S'inscrire" : 'Se connecter';
+  document.getElementById('authToggleText').textContent = isRegister ? 'Déjà un compte ?' : "Pas de compte ?";
+  this.textContent = isRegister ? 'Se connecter' : "S'inscrire";
+});
+
+document.getElementById('logoutBtn').addEventListener('click', logout);
+
+document.getElementById('createBoardBtn').addEventListener('click', function() {
+  var title = prompt('Titre du nouveau board :');
+  if (!title) return;
+  api.createBoard({ title: title }).then(function(board) {
+    renderDashboard();
+  }).catch(function(e) {
+    showError('dashboardError', e.message);
+  });
+});
+
+document.getElementById('inviteBtn').addEventListener('click', inviteMember);
+
+document.getElementById('submitCommentBtn').addEventListener('click', submitComment);
+document.getElementById('commentInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') submitComment();
+});
+
+document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+document.getElementById('deleteBoardBtn').addEventListener('click', deleteCurrentBoard);
+document.getElementById('addColBtn').addEventListener('click', addColumn);
+document.getElementById('addLabelBtn').addEventListener('click', addLabel);
+
+document.getElementById('togglePwBtn').addEventListener('click', togglePwFields);
+document.getElementById('saveProfileBtn').addEventListener('click', saveProfile);
+
+document.getElementById('modalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+document.querySelectorAll('.nav-auth').forEach(function(a) {
+  if (a.id !== 'logoutBtn' || !currentUser) a.classList.add('hidden');
+});
+
+// Enter to submit auth
+document.getElementById('loginPassword').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') handleAuth();
+});
+document.getElementById('registerConfirm').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') handleAuth();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,1786 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ProTask API",
+    "version": "1.0.0",
+    "description": "API RESTful de ProTask, un gestionnaire de tâches Kanban léger. ProTask permet de créer des boards, organiser des tâches dans des colonnes personnalisables, assigner des membres, et suivre l'avancement des projets. Inspiré de Trello et Notion."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api",
+      "description": "Serveur de développement local"
+    },
+    {
+      "url": "https://api.protask.dev",
+      "description": "Serveur de production"
+    }
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": ["Authentification"],
+        "summary": "Inscription d'un nouvel utilisateur",
+        "operationId": "registerUser",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "email", "password"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100,
+                    "description": "Nom complet de l'utilisateur"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Adresse email de l'utilisateur"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8,
+                    "description": "Mot de passe (minimum 8 caractères)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Utilisateur créé avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "$ref": "#/components/schemas/User"
+                    },
+                    "token": {
+                      "type": "string",
+                      "description": "Jeton JWT d'authentification"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides ou email déjà utilisé"
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Authentification"],
+        "summary": "Connexion d'un utilisateur",
+        "operationId": "loginUser",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Adresse email de l'utilisateur"
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "Mot de passe"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Connexion réussie",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "$ref": "#/components/schemas/User"
+                    },
+                    "token": {
+                      "type": "string",
+                      "description": "Jeton JWT d'authentification"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Email ou mot de passe incorrect"
+          }
+        }
+      }
+    },
+    "/users/me": {
+      "get": {
+        "tags": ["Utilisateurs"],
+        "summary": "Récupérer le profil de l'utilisateur connecté",
+        "operationId": "getCurrentUser",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Profil utilisateur",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Utilisateurs"],
+        "summary": "Mettre à jour le profil de l'utilisateur connecté",
+        "operationId": "updateCurrentUser",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100,
+                    "description": "Nouveau nom complet"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Nouvelle adresse email"
+                  },
+                  "avatar": {
+                    "type": "string",
+                    "format": "uri",
+                    "nullable": true,
+                    "description": "URL du nouvel avatar"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8,
+                    "description": "Nouveau mot de passe"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profil mis à jour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "tags": ["Utilisateurs"],
+        "summary": "Récupérer un utilisateur par son ID",
+        "operationId": "getUserById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID de l'utilisateur"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Utilisateur trouvé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Utilisateur non trouvé"
+          }
+        }
+      }
+    },
+    "/boards": {
+      "get": {
+        "tags": ["Boards"],
+        "summary": "Lister les boards de l'utilisateur connecté",
+        "operationId": "listBoards",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Liste des boards",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Board"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Boards"],
+        "summary": "Créer un nouveau board",
+        "operationId": "createBoard",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title"],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "description": "Titre du board"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Board créé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Board"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides"
+          },
+          "401": {
+            "description": "Non authentifié"
+          }
+        }
+      }
+    },
+    "/boards/{id}": {
+      "get": {
+        "tags": ["Boards"],
+        "summary": "Récupérer un board avec ses colonnes et membres",
+        "operationId": "getBoardById",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID du board"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Board trouvé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/Board" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "columns": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Column"
+                          },
+                          "description": "Colonnes du board"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "404": {
+            "description": "Board non trouvé"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Boards"],
+        "summary": "Mettre à jour un board",
+        "operationId": "updateBoard",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID du board"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "description": "Nouveau titre du board"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Board mis à jour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Board"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "404": {
+            "description": "Board non trouvé"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Boards"],
+        "summary": "Supprimer un board",
+        "operationId": "deleteBoard",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID du board"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Board supprimé"
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "404": {
+            "description": "Board non trouvé"
+          }
+        }
+      }
+    },
+    "/boards/{id}/invitations": {
+      "post": {
+        "tags": ["Invitations"],
+        "summary": "Inviter un membre au board",
+        "operationId": "inviteMember",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID du board"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email"],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Email de l'utilisateur à inviter"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Invitation envoyée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Invitation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides"
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "404": {
+            "description": "Board non trouvé"
+          }
+        }
+      },
+      "get": {
+        "tags": ["Invitations"],
+        "summary": "Lister les invitations en attente d'un board",
+        "operationId": "listBoardInvitations",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID du board"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste des invitations en attente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Invitation"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "404": {
+            "description": "Board non trouvé"
+          }
+        }
+      }
+    },
+    "/invitations/{id}": {
+      "put": {
+        "tags": ["Invitations"],
+        "summary": "Accepter ou refuser une invitation",
+        "operationId": "respondToInvitation",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID de l'invitation"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["status"],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["accepted"],
+                    "description": "Nouveau statut de l'invitation"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Invitation mise à jour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Invitation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Statut invalide"
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "404": {
+            "description": "Invitation non trouvée"
+          }
+        }
+      }
+    },
+    "/boards/{id}/columns": {
+      "post": {
+        "tags": ["Colonnes"],
+        "summary": "Créer une colonne dans un board",
+        "operationId": "createColumn",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID du board"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title"],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "Titre de la colonne"
+                  },
+                  "order": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Position de la colonne"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Colonne créée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Column"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides"
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "404": {
+            "description": "Board non trouvé"
+          }
+        }
+      }
+    },
+    "/columns/{id}": {
+      "put": {
+        "tags": ["Colonnes"],
+        "summary": "Mettre à jour une colonne",
+        "operationId": "updateColumn",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID de la colonne"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "Nouveau titre de la colonne"
+                  },
+                  "order": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Nouvelle position de la colonne"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Colonne mise à jour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Column"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "404": {
+            "description": "Colonne non trouvée"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Colonnes"],
+        "summary": "Supprimer une colonne",
+        "operationId": "deleteColumn",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID de la colonne"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Colonne supprimée"
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "404": {
+            "description": "Colonne non trouvée"
+          }
+        }
+      }
+    },
+    "/columns/reorder": {
+      "put": {
+        "tags": ["Colonnes"],
+        "summary": "Réordonner les colonnes",
+        "operationId": "reorderColumns",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["id", "order"],
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "description": "ID de la colonne"
+                    },
+                    "order": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Nouvelle position"
+                    }
+                  }
+                },
+                "description": "Liste des colonnes avec leur nouvel ordre"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Colonnes réordonnées",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Column"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides"
+          },
+          "401": {
+            "description": "Non authentifié"
+          }
+        }
+      }
+    },
+    "/columns/{id}/cards": {
+      "get": {
+        "tags": ["Cartes"],
+        "summary": "Lister les cartes d'une colonne",
+        "operationId": "listCards",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID de la colonne"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste des cartes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Card"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "404": {
+            "description": "Colonne non trouvée"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Cartes"],
+        "summary": "Créer une carte dans une colonne",
+        "operationId": "createCard",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID de la colonne"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title"],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "Titre de la carte"
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "Description de la carte"
+                  },
+                  "order": {
+                    "type": "integer",
+                    "description": "Position dans la colonne"
+                  },
+                  "dueDate": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true,
+                    "description": "Date d'échéance"
+                  },
+                  "assigneeId": {
+                    "type": "integer",
+                    "nullable": true,
+                    "description": "ID de l'utilisateur assigné"
+                  },
+                  "labelIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "IDs des labels à associer à la carte"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Carte créée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Card"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides"
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "404": {
+            "description": "Colonne non trouvée"
+          }
+        }
+      }
+    },
+    "/cards/{id}": {
+      "get": {
+        "tags": ["Cartes"],
+        "summary": "Récupérer une carte avec ses labels, commentaires et assigné",
+        "operationId": "getCardById",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID de la carte"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Carte trouvée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/Card" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "assignee": {
+                          "allOf": [
+                            { "$ref": "#/components/schemas/User" },
+                            { "description": "Utilisateur assigné à la carte" }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "404": {
+            "description": "Carte non trouvée"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Cartes"],
+        "summary": "Mettre à jour une carte",
+        "operationId": "updateCard",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID de la carte"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "Nouveau titre"
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "Nouvelle description"
+                  },
+                  "order": {
+                    "type": "integer",
+                    "description": "Nouvelle position"
+                  },
+                  "dueDate": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true,
+                    "description": "Nouvelle date d'échéance"
+                  },
+                  "assigneeId": {
+                    "type": "integer",
+                    "nullable": true,
+                    "description": "Nouvel assigné"
+                  },
+                  "labelIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "IDs des labels à associer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Carte mise à jour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Card"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "404": {
+            "description": "Carte non trouvée"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Cartes"],
+        "summary": "Supprimer une carte",
+        "operationId": "deleteCard",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID de la carte"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Carte supprimée"
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "404": {
+            "description": "Carte non trouvée"
+          }
+        }
+      }
+    },
+    "/cards/reorder": {
+      "put": {
+        "tags": ["Cartes"],
+        "summary": "Réordonner les cartes",
+        "operationId": "reorderCards",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["id", "order"],
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "description": "ID de la carte"
+                    },
+                    "order": {
+                      "type": "integer",
+                      "description": "Nouvelle position"
+                    }
+                  }
+                },
+                "description": "Liste des cartes avec leur nouvel ordre"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cartes réordonnées",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Card"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides"
+          },
+          "401": {
+            "description": "Non authentifié"
+          }
+        }
+      }
+    },
+    "/cards/{id}/move": {
+      "put": {
+        "tags": ["Cartes"],
+        "summary": "Déplacer une carte vers une autre colonne",
+        "operationId": "moveCard",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID de la carte"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["columnId"],
+                "properties": {
+                  "columnId": {
+                    "type": "integer",
+                    "description": "ID de la colonne de destination"
+                  },
+                  "order": {
+                    "type": "integer",
+                    "description": "Nouvelle position dans la colonne de destination"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Carte déplacée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Card"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides"
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "404": {
+            "description": "Carte non trouvée"
+          }
+        }
+      }
+    },
+    "/boards/{id}/labels": {
+      "post": {
+        "tags": ["Labels"],
+        "summary": "Créer un label dans un board",
+        "operationId": "createLabel",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID du board"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "color"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Nom du label"
+                  },
+                  "color": {
+                    "type": "string",
+                    "pattern": "^#[0-9a-fA-F]{6}$",
+                    "description": "Couleur hexadécimale du label (ex: #4F46E5)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Label créé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Label"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides"
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "404": {
+            "description": "Board non trouvé"
+          }
+        }
+      }
+    },
+    "/labels/{id}": {
+      "put": {
+        "tags": ["Labels"],
+        "summary": "Mettre à jour un label",
+        "operationId": "updateLabel",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID du label"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Nouveau nom"
+                  },
+                  "color": {
+                    "type": "string",
+                    "pattern": "^#[0-9a-fA-F]{6}$",
+                    "description": "Nouvelle couleur hexadécimale"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Label mis à jour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Label"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "404": {
+            "description": "Label non trouvé"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Labels"],
+        "summary": "Supprimer un label",
+        "operationId": "deleteLabel",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID du label"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Label supprimé"
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "404": {
+            "description": "Label non trouvé"
+          }
+        }
+      }
+    },
+    "/cards/{id}/comments": {
+      "get": {
+        "tags": ["Commentaires"],
+        "summary": "Lister les commentaires d'une carte",
+        "operationId": "listComments",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID de la carte"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste des commentaires",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Comment"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "404": {
+            "description": "Carte non trouvée"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Commentaires"],
+        "summary": "Ajouter un commentaire à une carte",
+        "operationId": "createComment",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID de la carte"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["text"],
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "description": "Contenu du commentaire"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Commentaire créé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Comment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides"
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "404": {
+            "description": "Carte non trouvée"
+          }
+        }
+      }
+    },
+    "/comments/{id}": {
+      "delete": {
+        "tags": ["Commentaires"],
+        "summary": "Supprimer un commentaire",
+        "operationId": "deleteComment",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID du commentaire"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Commentaire supprimé"
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "403": {
+            "description": "Action non autorisée"
+          },
+          "404": {
+            "description": "Commentaire non trouvé"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Authentification par jeton JWT. Ajoutez le jeton dans l'en-tête Authorization sous la forme: Bearer &lt;jeton&gt;"
+      }
+    },
+    "schemas": {
+      "User": {
+        "$id": "https://api.protask.dev/schemas/User.json",
+        "type": "object",
+        "description": "Utilisateur de l'application ProTask",
+        "required": ["id", "name", "email", "createdAt"],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Identifiant unique de l'utilisateur",
+            "readOnly": true,
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "description": "Nom complet de l'utilisateur",
+            "minLength": 2,
+            "maxLength": 100,
+            "example": "Marie Dupont"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Adresse email de l'utilisateur",
+            "example": "marie.dupont@exemple.fr"
+          },
+          "avatar": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "description": "URL de l'avatar de l'utilisateur",
+            "example": "https://api.protask.dev/uploads/avatars/1.jpg"
+          },
+          "password": {
+            "type": "string",
+            "description": "Mot de passe de l'utilisateur (uniquement en écriture)",
+            "writeOnly": true,
+            "minLength": 8,
+            "example": null
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Date de création du compte",
+            "readOnly": true,
+            "example": "2026-03-15T10:30:00Z"
+          }
+        }
+      },
+      "Board": {
+        "$id": "https://api.protask.dev/schemas/Board.json",
+        "type": "object",
+        "description": "Board (tableau Kanban) contenant des colonnes et des cartes",
+        "required": ["id", "title", "ownerId", "createdAt"],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Identifiant unique du board",
+            "readOnly": true,
+            "example": 1
+          },
+          "title": {
+            "type": "string",
+            "description": "Titre du board",
+            "minLength": 1,
+            "maxLength": 200,
+            "example": "Projet Site Web"
+          },
+          "ownerId": {
+            "type": "integer",
+            "description": "ID du propriétaire du board",
+            "example": 1
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Date de création du board",
+            "readOnly": true,
+            "example": "2026-03-15T10:30:00Z"
+          },
+          "members": {
+            "type": "array",
+            "description": "Membres du board (uniquement dans les réponses)",
+            "items": {
+              "$ref": "#/components/schemas/User"
+            }
+          }
+        }
+      },
+      "Column": {
+        "$id": "https://api.protask.dev/schemas/Column.json",
+        "type": "object",
+        "description": "Colonne d'un board Kanban",
+        "required": ["id", "title", "order", "boardId", "createdAt"],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Identifiant unique de la colonne",
+            "readOnly": true,
+            "example": 1
+          },
+          "title": {
+            "type": "string",
+            "description": "Titre de la colonne",
+            "example": "À faire"
+          },
+          "order": {
+            "type": "integer",
+            "description": "Position de la colonne dans le board (ordonnancement)",
+            "minimum": 0,
+            "example": 0
+          },
+          "boardId": {
+            "type": "integer",
+            "description": "ID du board auquel appartient la colonne",
+            "example": 1
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Date de création de la colonne",
+            "readOnly": true,
+            "example": "2026-03-15T10:35:00Z"
+          }
+        }
+      },
+      "Card": {
+        "$id": "https://api.protask.dev/schemas/Card.json",
+        "type": "object",
+        "description": "Carte (tâche) dans une colonne Kanban",
+        "required": ["id", "title", "order", "columnId", "createdAt"],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Identifiant unique de la carte",
+            "readOnly": true,
+            "example": 1
+          },
+          "title": {
+            "type": "string",
+            "description": "Titre de la carte",
+            "example": "Créer la page d'accueil"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "Description détaillée de la carte",
+            "example": "Maquette Figma validée, reste à intégrer les composants header et hero"
+          },
+          "order": {
+            "type": "integer",
+            "description": "Position de la carte dans la colonne",
+            "example": 0
+          },
+          "columnId": {
+            "type": "integer",
+            "description": "ID de la colonne contenant la carte",
+            "example": 1
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Date d'échéance de la carte",
+            "example": "2026-04-01"
+          },
+          "assigneeId": {
+            "type": "integer",
+            "nullable": true,
+            "description": "ID de l'utilisateur assigné à la carte",
+            "example": 2
+          },
+          "labels": {
+            "type": "array",
+            "description": "Étiquettes associées à la carte",
+            "items": {
+              "$ref": "#/components/schemas/Label"
+            }
+          },
+          "comments": {
+            "type": "array",
+            "description": "Commentaires associés à la carte",
+            "items": {
+              "$ref": "#/components/schemas/Comment"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Date de création de la carte",
+            "readOnly": true,
+            "example": "2026-03-15T14:00:00Z"
+          }
+        }
+      },
+      "Label": {
+        "$id": "https://api.protask.dev/schemas/Label.json",
+        "type": "object",
+        "description": "Étiquette (label) colorée pour catégoriser les cartes",
+        "required": ["id", "name", "color", "boardId"],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Identifiant unique du label",
+            "readOnly": true,
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "description": "Nom du label",
+            "example": "Urgent"
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "description": "Couleur hexadécimale du label",
+            "example": "#EF4444"
+          },
+          "boardId": {
+            "type": "integer",
+            "description": "ID du board auquel appartient le label",
+            "example": 1
+          }
+        }
+      },
+      "Comment": {
+        "$id": "https://api.protask.dev/schemas/Comment.json",
+        "type": "object",
+        "description": "Commentaire sur une carte",
+        "required": ["id", "text", "authorId", "cardId", "createdAt"],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Identifiant unique du commentaire",
+            "readOnly": true,
+            "example": 1
+          },
+          "text": {
+            "type": "string",
+            "description": "Contenu du commentaire",
+            "example": "J'ai commencé l'intégration, la maquette est super claire !"
+          },
+          "authorId": {
+            "type": "integer",
+            "description": "ID de l'utilisateur auteur du commentaire",
+            "example": 1
+          },
+          "cardId": {
+            "type": "integer",
+            "description": "ID de la carte commentée",
+            "example": 1
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Date de création du commentaire",
+            "readOnly": true,
+            "example": "2026-03-15T15:30:00Z"
+          }
+        }
+      },
+      "Invitation": {
+        "$id": "https://api.protask.dev/schemas/Invitation.json",
+        "type": "object",
+        "description": "Invitation d'un utilisateur à rejoindre un board",
+        "required": ["id", "boardId", "email", "invitedById", "status", "createdAt"],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Identifiant unique de l'invitation",
+            "readOnly": true,
+            "example": 1
+          },
+          "boardId": {
+            "type": "integer",
+            "description": "ID du board auquel l'utilisateur est invité",
+            "example": 1
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Email de l'utilisateur invité",
+            "example": "jean.dupont@exemple.fr"
+          },
+          "invitedById": {
+            "type": "integer",
+            "description": "ID de l'utilisateur ayant envoyé l'invitation",
+            "example": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "accepted"],
+            "description": "Statut de l'invitation (en attente ou acceptée)",
+            "example": "pending"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Date de création de l'invitation",
+            "readOnly": true,
+            "example": "2026-03-16T09:00:00Z"
+          }
+        }
+      }
+    }
+  }
+}

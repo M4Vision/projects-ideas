@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SHOPFLOW — Neo-Brutalist</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,-apple-system,sans-serif;background:#fff;color:#000;min-height:100vh}
+h1,h2,h3{font-family:'Impact','Arial Black',sans-serif;text-transform:uppercase;letter-spacing:-.5px}
+.brutal{border:3px solid #000;box-shadow:6px 6px 0 #000;background:#fff}
+.brutal-sm{border:2px solid #000;box-shadow:4px 4px 0 #000}
+.brutal-btn{font-family:'Impact','Arial Black',sans-serif;text-transform:uppercase;border:3px solid #000;box-shadow:5px 5px 0 #000;cursor:pointer;padding:12px 24px;font-size:14px;transition:all .08s linear;background:#fff;color:#000}
+.brutal-btn:active{box-shadow:1px 1px 0 #000;transform:translate(4px,4px)}
+.brutal-btn-pink{background:#FF3366;color:#fff}
+.brutal-btn-gold{background:#FFD700;color:#000}
+.brutal-btn-cyan{background:#00E5FF;color:#000}
+.brutal-btn-black{background:#000;color:#fff}
+.brutal-input{border:3px solid #000;padding:10px 14px;font-size:15px;background:#fff;width:100%;outline:none}
+.brutal-input:focus{box-shadow:4px 4px 0 #000;transform:translate(-2px,-2px)}
+.brutal-card{background:#fff;border:3px solid #000;box-shadow:6px 6px 0 #000;padding:20px}
+.stock-badge{display:inline-block;padding:2px 8px;font-size:11px;font-weight:700;text-transform:uppercase;border:2px solid #000;margin:4px 0}
+.stock-in-stock{background:#00E5FF;color:#000}
+.stock-low-stock{background:#FFD700;color:#000}
+.stock-out-of-stock{background:#FF3366;color:#fff}
+.stock-pre-order{background:#000;color:#fff}
+.topbar{display:flex;align-items:center;gap:12px;padding:12px 24px;border-bottom:3px solid #000;flex-wrap:wrap;position:sticky;top:0;background:#fff;z-index:100}
+.topbar .logo{font-size:24px;font-family:'Impact','Arial Black',sans-serif}
+.page{display:none;padding:24px;max-width:1400px;margin:0 auto}
+.page.active{display:block}
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:200;justify-content:center;align-items:center}
+.modal-overlay.open{display:flex}
+.modal-content{background:#fff;border:3px solid #000;box-shadow:6px 6px 0 #000;padding:24px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto}
+@media(max-width:768px){.topbar{gap:8px;padding:8px 12px}.page{padding:12px}.brutal-btn{padding:8px 16px;font-size:12px}}
+@media(max-width:480px){.topbar{flex-wrap:wrap}.topbar>*{min-height:44px}.brutal-btn{min-height:44px;width:100%}}
+</style>
+<script src="../../demo-api.js"></script>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">SHOPFLOW</div>
+  <input class="brutal-input" style="flex:1;min-width:150px" id="searchInput" placeholder="🔍 Rechercher..." onkeyup="if(event.key==='Enter')searchProd(this.value)">
+  <button class="brutal-btn brutal-btn-cyan" onclick="showPage('catalogue')">🏪 CATALOGUE</button>
+  <button class="brutal-btn" onclick="showPage('cart')">🛒 (<span id="cartCount">0</span>)</button>
+  <button class="brutal-btn" onclick="showPage('wallet')">💰</button>
+  <div id="authBtns"><button class="brutal-btn brutal-btn-pink" onclick="showPage('login')">🔐</button></div>
+  <div id="userBtns" style="display:none;align-items:center;gap:8px">
+    <span id="userName" style="font-weight:700;font-size:14px"></span>
+    <button class="brutal-btn brutal-btn-black" onclick="showPage('profile')">PROFIL</button>
+    <button class="brutal-btn" onclick="showPage('dashboard')">VENDRE</button>
+    <button class="brutal-btn" onclick="logout()">✕</button>
+  </div>
+</div>
+
+<div class="page active" id="page-home"><div id="homeContent"></div></div>
+<div class="page" id="page-login"><div id="loginContent"></div></div>
+<div class="page" id="page-catalogue"><div id="catalogueContent"></div></div>
+<div class="page" id="page-product"><div id="productContent"></div></div>
+<div class="page" id="page-cart"><div id="cartContent"></div></div>
+<div class="page" id="page-checkout"><div id="checkoutContent"></div></div>
+<div class="page" id="page-wallet"><div id="walletContent"></div></div>
+<div class="page" id="page-dashboard"><div id="dashContent"></div></div>
+<div class="page" id="page-profile"><div id="profileContent"></div></div>
+<div class="page" id="page-admin"><div id="adminContent"></div></div>
+
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal-content" id="modalContent"></div>
+</div>
+
+<script>
+const delay=ms=>new Promise(r=>setTimeout(r,ms));
+,cart=[];
+
+// mockData defined in demo-api.js
+const _db = mockData;
+const api = demoApi;
+// Current user helper
+let currentUser = (typeof getCurrentUser === "function") ? getCurrentUser() : null;
+function showPage(n){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));const e=document.getElementById('page-'+n);if(e)e.classList.add('active');if(n==='home')renderHome();if(n==='login')renderLogin();if(n==='catalogue')renderCatalogue();if(n==='cart')renderCart();if(n==='wallet')renderWallet();if(n==='profile')renderProfile();if(n==='admin')renderAdmin();if(n==='dashboard')renderDash();}
+
+function updateUI(){document.getElementById('authBtns').style.display=currentUser?'none':'flex';document.getElementById('userBtns').style.display=currentUser?'flex':'none';if(currentUser)document.getElementById('userName').textContent=currentUser.name;document.getElementById('cartCount').textContent=cart.reduce((s,i)=>s+i.qty,0)}
+
+// AUTH
+function renderLogin(){document.getElementById('loginContent').innerHTML=`<div style="max-width:400px;margin:60px auto"><div class="brutal-card" style="text-align:center"><h2>CONNEXION</h2><input class="brutal-input" id="le" placeholder="Email" style="margin:12px 0"><input class="brutal-input" id="lp" type="password" placeholder="Mot de passe"><button class="brutal-btn brutal-btn-pink" onclick="doLogin()" style="width:100%;margin-top:12px">SE CONNECTER</button><p style="margin-top:12px">Pas de compte ? <a href="#" onclick="showRegister()" style="text-decoration:underline">S'inscrire</a></p></div></div>`}
+function showRegister(){document.getElementById('loginContent').innerHTML=`<div style="max-width:400px;margin:60px auto"><div class="brutal-card" style="text-align:center"><h2>INSCRIPTION</h2><input class="brutal-input" id="rn" placeholder="Nom" style="margin:12px 0"><input class="brutal-input" id="re" placeholder="Email"><input class="brutal-input" id="rp" type="password" placeholder="Mot de passe" style="margin-top:12px"><button class="brutal-btn brutal-btn-gold" onclick="doRegister()" style="width:100%;margin-top:12px">CRÉER MON COMPTE</button><p style="margin-top:12px">Déjà un compte ? <a href="#" onclick="renderLogin()" style="text-decoration:underline">Se connecter</a></p></div></div>`}
+async function doLogin(){try{const r=await api.login({email:document.getElementById('le').value,password:document.getElementById('lp').value});currentUser=r.user;updateUI();showPage('home');alert('Bienvenue '+currentUser.name)}catch(e){alert(e.message)}}
+async function doRegister(){try{const r=await api.register({name:document.getElementById('rn').value,email:document.getElementById('re').value,password:document.getElementById('rp').value});currentUser=r.user;updateUI();showPage('home');alert('Compte créé ! 10 000 crédits')}catch(e){alert(e.message)}}
+function logout(){currentUser=null;cart=[];updateUI();showPage('home')}
+
+// HOME
+async function renderHome(){const c=await api.getCategories();const p=await api.getProducts();document.getElementById('homeContent').innerHTML=`<div style="text-align:center;padding:40px 0"><h1 style="font-size:48px">SHOPFLOW</h1><p style="font-size:18px;margin:12px 0 24px">Achetez & vendez en marketplace</p><button class="brutal-btn brutal-btn-pink" onclick="showPage('catalogue')">EXPLORER</button></div><h2 style="margin:24px 0 12px">CATÉGORIES</h2><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px">${c.map(x=>`<div class="brutal-card" style="text-align:center;cursor:pointer;padding:16px" onclick="showPage('catalogue')"><h3>${x.name}</h3></div>`).join('')}</div><h2 style="margin:24px 0 12px">PRODUITS POPULAIRES</h2><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px">${p.map(x=>pc(x)).join('')}</div>`}
+
+function pc(p){const s=p.stockStatus;const b=s==='in_stock'?'<span class="stock-badge stock-in-stock">● EN STOCK</span>':s==='low_stock'?`<span class="stock-badge stock-low-stock">⚠ FAIBLE (${p.stock})</span>`:s==='out_of_stock'?'<span class="stock-badge stock-out-of-stock">✕ RUPTURE</span>':'<span class="stock-badge stock-pre-order">📅 PRÉCOMMANDE</span>';const d=s==='out_of_stock'?'disabled style="opacity:.4"':'';const t=s==='pre_order'?'PRÉCOMMANDER':s==='out_of_stock'?'RUPTURE':'AJOUTER ➕';return`<div class="brutal-card" style="cursor:pointer"><div style="background:#eee;height:120px;display:flex;align-items:center;justify-content:center;border:2px solid #000;margin-bottom:8px">📦</div><h3 style="font-size:14px">${p.title}</h3>${b}<p class="mono" style="font-size:20px;margin:8px 0">${p.price.toFixed(2)} €</p><div style="display:flex;gap:8px"><button class="brutal-btn brutal-btn-cyan" onclick="addC(${p.id})" ${d} style="flex:1;padding:8px;font-size:12px">${t}</button><button class="brutal-btn" onclick="viewP(${p.id})" style="padding:8px;font-size:12px">DÉTAIL</button></div></div>`}
+
+async function addC(pid){try{await api.addToCart(pid);updateUI();alert('Ajouté !')}catch(e){alert(e.message)}}
+function searchProd(q){if(q.length>1){showPage('catalogue');api.getProducts({search:q}).then(r=>{document.getElementById('productGrid').innerHTML=r.map(x=>pc(x)).join('')||'<p style="padding:40px text-align:center">Aucun résultat</p>'})}}
+
+async function viewP(id){try{const p=await api.getProduct(id);showPage('product');const s=p.stockStatus;const b=s==='in_stock'?'<span class="stock-badge stock-in-stock">● EN STOCK</span>':s==='low_stock'?`<span class="stock-badge stock-low-stock">⚠ FAIBLE (${p.stock})</span>`:s==='out_of_stock'?'<span class="stock-badge stock-out-of-stock">✕ RUPTURE — ${p.availabilityDate||''}</span>':'<span class="stock-badge stock-pre-order">📅 PRÉCO — ${p.availabilityDate||''}</span>';const r=p.reviews.map(x=>`<div class="brutal-card" style="padding:12px;margin-bottom:8px"><strong>${x.author?.name||'Anonyme'}</strong> ${'★'.repeat(x.rating)}${'☆'.repeat(5-x.rating)}<br>${x.comment}</div>`).join('')||'<p>Aucun avis</p>';document.getElementById('productContent').innerHTML=`<button class="brutal-btn" onclick="showPage('catalogue')" style="margin-bottom:16px">← RETOUR</button><div style="display:grid;grid-template-columns:1fr 1fr;gap:24px"><div class="brutal-card" style="height:280px;display:flex;align-items:center;justify-content:center;font-size:48px">📦</div><div><h1>${p.title}</h1>${b}<p class="mono" style="font-size:32px;margin:12px 0">${p.price.toFixed(2)} €</p><p>${p.description}</p><p style="margin:8px 0">Vendeur: <strong>${p.seller?.name}</strong></p><button class="brutal-btn brutal-btn-pink" onclick="addC(${p.id})" style="margin-right:8px">AJOUTER</button><button class="brutal-btn" onclick="addF(${p.id})">❤️ FAVORI</button></div></div><h2 style="margin:24px 0 12px">AVIS (${p.reviews.length})</h2>${r}<div class="brutal-card"><h3>VOTRE AVIS</h3><div style="margin:8px 0;font-size:24px" id="stars">${[1,2,3,4,5].map(i=>`<span onclick="setR(${i})" style="cursor:pointer">☆</span>`).join('')}</div><textarea class="brutal-input" id="rtxt" placeholder="Commentaire..." rows="3"></textarea><button class="brutal-btn brutal-btn-gold" onclick="subR(${id})" style="margin-top:8px">PUBLIER</button></div>`}catch(e){alert(e.message)}}
+let cr=0;function setR(n){cr=n;document.querySelectorAll('#stars span').forEach((e,i)=>{e.textContent=i<n?'★':'☆'})}
+async function subR(pid){try{if(!cr)throw Error('Notez le produit');const t=document.getElementById('rtxt').value;await api.createReview(pid,{rating:cr,comment:t||'Super !'});alert('Avis publié !');viewP(pid)}catch(e){alert(e.message)}}
+async function addF(pid){try{await api.addFavorite(pid);alert('Favori ajouté')}catch(e){}}
+
+// CATALOGUE
+async function renderCatalogue(){const c=await api.getCategories();const p=await api.getProducts();document.getElementById('catalogueContent').innerHTML=`<div style="display:grid;grid-template-columns:200px 1fr;gap:20px"><div class="brutal-card"><h3>FILTRES</h3><div style="margin:12px 0"><strong>Catégorie</strong>${c.map(x=>`<label style="display:block;margin:4px 0"><input type="checkbox" class="cf" value="${x.id}" onchange="filt()"> ${x.name}</label>`).join('')}</div><div style="margin:12px 0"><strong>Disponibilité</strong>${[['in_stock','En stock'],['low_stock','Stock faible'],['pre_order','Précommande']].map(x=>`<label style="display:block;margin:4px 0"><input type="checkbox" class="sf" value="${x[0]}" onchange="filt()"> ${x[1]}</label>`).join('')}</div><button class="brutal-btn brutal-btn-black" onclick="rst()" style="width:100%">RÉINITIALISER</button></div><div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px" id="productGrid">${p.map(x=>pc(x)).join('')}</div></div></div>`}
+async function filt(){const c=[...document.querySelectorAll('.cf:checked')].map(x=>+x.value);const s=[...document.querySelectorAll('.sf:checked')].map(x=>x.value);try{const r=await api.getProducts({categoryId:c.length?c:undefined,stockStatus:s.length?s:undefined});document.getElementById('productGrid').innerHTML=r.map(x=>pc(x)).join('')||'<p style="padding:40px">Aucun produit</p>'}catch(e){}}
+function rst(){document.querySelectorAll('.cf,.sf').forEach(x=>x.checked=false);renderCatalogue()}
+
+// CART
+async function renderCart(){const i=await api.getCart();if(!i.length)return document.getElementById('cartContent').innerHTML=`<div style="text-align:center;padding:60px"><h2>PANIER VIDE</h2><p>Ajoutez des produits.</p><button class="brutal-btn brutal-btn-pink" onclick="showPage('catalogue')" style="margin-top:12px">EXPLORER</button></div>`;const t=i.reduce((s,x)=>s+(x.product?.price||0)*x.qty,0);document.getElementById('cartContent').innerHTML=`<h2 style="margin-bottom:16px">PANIER</h2>${i.map(x=>`<div class="brutal-card" style="display:flex;align-items:center;gap:12px;margin-bottom:8px;padding:12px"><div style="flex:1"><strong>${x.product?.title}</strong><br><span class="mono">${(x.product?.price||0).toFixed(2)} €</span></div><div style="display:flex;align-items:center;gap:8px"><button class="brutal-btn brutal-btn-cyan" onclick="uq(${x.id},-1)" style="padding:4px 12px">-</button><span class="mono">${x.qty}</span><button class="brutal-btn brutal-btn-cyan" onclick="uq(${x.id},1)" style="padding:4px 12px">+</button></div><span class="mono">${((x.product?.price||0)*x.qty).toFixed(2)} €</span><button class="brutal-btn" onclick="rci(${x.id})" style="padding:4px 8px">✕</button></div>`).join('')}<div class="brutal-card" style="text-align:right;margin-top:12px"><h2>TOTAL: ${t.toFixed(2)} €</h2><button class="brutal-btn brutal-btn-pink" onclick="showPage('checkout')" style="margin-top:12px">COMMANDER</button></div>`}
+async function uq(iid,c){try{const i=cart.find(x=>x.id===iid);if(i){i.qty=Math.max(1,i.qty+c);renderCart();updateUI()}}catch(e){}}
+async function rci(iid){try{await api.removeFromCart(iid);renderCart();updateUI()}catch(e){}}
+
+// CHECKOUT
+async function renderCheckout(){const i=await api.getCart();if(!i.length)return showPage('cart');const t=i.reduce((s,x)=>s+(x.product?.price||0)*x.qty,0);document.getElementById('checkoutContent').innerHTML=`<h2>CHECKOUT</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:16px"><div class="brutal-card"><h3>ADRESSE</h3><input class="brutal-input" id="adr" placeholder="Adresse" style="margin-bottom:8px"><input class="brutal-input" id="vil" placeholder="Ville" style="margin-bottom:8px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input class="brutal-input" id="cp" placeholder="Code postal"><input class="brutal-input" id="pays" placeholder="Pays" value="France"></div></div><div><div class="brutal-card"><h3>RÉCAP</h3>${i.map(x=>`<p>${x.product?.title} x${x.qty} = ${((x.product?.price||0)*x.qty).toFixed(2)} €</p>`).join('')}<hr style="margin:8px 0;border:2px solid #000"><h3>TOTAL: ${t.toFixed(2)} €</h3></div><button class="brutal-btn brutal-btn-gold" onclick="co()" style="width:100%;margin-top:12px">CONFIRMER</button></div></div>`}
+async function co(){try{const o=await api.createOrder();alert('Commande #'+o.id+' confirmée !');updateUI();showPage('profile')}catch(e){alert(e.message)}}
+
+// WALLET
+async function renderWallet(){try{const w=await api.getWallet();document.getElementById('walletContent').innerHTML=`<div class="brutal-card" style="text-align:center;margin-bottom:16px"><h2>PORTEFEUILLE</h2><p class="mono" style="font-size:48px">${w.balance.toFixed(2)} €</p><button class="brutal-btn brutal-btn-gold" onclick="cb()" style="margin-top:12px">🎁 BONUS +500</button></div><h3>HISTORIQUE</h3>${w.transactions.map(t=>`<div class="brutal-card" style="padding:8px 12px;margin-bottom:4px;display:flex;justify-content:space-between"><span>${t.description}</span><span class="mono" style="color:${t.amount>0?'#00E5FF':'#FF3366'}">${t.amount>0?'+':''}${t.amount.toFixed(2)} €</span></div>`).join('')||'<p>Aucune transaction</p>'}`}catch(e){alert(e.message)}}
+async function cb(){try{const r=await api.claimDailyBonus();alert('+500 € ! Solde: '+r.balance.toFixed(2)+' €');renderWallet()}catch(e){alert(e.message)}}
+
+// PROFILE
+async function renderProfile(){if(!currentUser)return showPage('login');const me=await api.getMe();const o=await api.getOrders();const f=await api.getFavorites();document.getElementById('profileContent').innerHTML=`<div class="brutal-card" style="margin-bottom:16px"><h2>${me.name}</h2><p>${me.email}</p><p>💰 ${me.walletBalance.toFixed(2)} €</p></div><h3>COMMANDES</h3>${o.map(x=>`<div class="brutal-card" style="padding:12px;margin-bottom:8px"><strong>#${x.id}</strong> ${x.status} — ${x.total.toFixed(2)} €<br>${x.items.map(i=>i.product?.title).join(', ')}</div>`).join('')||'<p>Aucune commande</p>'}<h3 style="margin-top:16px">FAVORIS</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">${f.map(x=>`<div class="brutal-card" style="padding:12px"><strong>${x.product?.title}</strong><br>${(x.product?.price||0).toFixed(2)} €</div>`).join('')||'<p>Aucun favori</p>'}</div>`}
+
+// DASHBOARD (SELLER)
+async function renderDash(){if(!currentUser)return showPage('login');const p=await api.getProducts();const mine=p.filter(x=>x.seller?.id===currentUser.id);document.getElementById('dashContent').innerHTML=`<h2>TABLEAU DE BORD VENDEUR</h2><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0">${[['💰 Revenus',mine.reduce((s,x)=>s+x.price,0).toFixed(2)+' €'],['📦 Produits',mine.length],['⚠️ Stock faible',mine.filter(x=>x.stock<=5&&x.stock>0).length]].map(x=>`<div class="brutal-card" style="text-align:center"><h3>${x[0]}</h3><p class="mono" style="font-size:24px">${x[1]}</p></div>`).join('')}</div><div style="display:flex;gap:8px;margin-bottom:16px"><button class="brutal-btn brutal-btn-cyan" onclick="dashView('products')">MES PRODUITS</button><button class="brutal-btn brutal-btn-gold" onclick="dashView('add')">AJOUTER</button></div><div id="dashContentInner">${dashProducts(mine)}</div>`
+  document.querySelector('#page-dashboard')?.setAttribute('data-view','products');
+}
+function dashProducts(items){return items.map(x=>`<div class="brutal-card" style="display:flex;justify-content:space-between;align-items:center;padding:12px;margin-bottom:4px"><span><strong>${x.title}</strong> — ${x.price.toFixed(2)} € — Stock: ${x.stock}</span><span class="stock-badge ${x.stockStatus==='in_stock'?'stock-in-stock':x.stockStatus==='low_stock'?'stock-low-stock':'stock-out-of-stock'}">${x.stockStatus}</span></div>`).join('')||'<p>Aucun produit</p>'}
+function dashView(v){if(v==='add')document.getElementById('dashContentInner').innerHTML=`<div class="brutal-card"><h3>NOUVEAU PRODUIT</h3><input class="brutal-input" id="dti" placeholder="Titre" style="margin-bottom:8px"><textarea class="brutal-input" id="ddesc" placeholder="Description" style="margin-bottom:8px"></textarea><input class="brutal-input" id="dpr" placeholder="Prix" type="number" style="margin-bottom:8px"><input class="brutal-input" id="dst" placeholder="Stock" type="number" style="margin-bottom:8px"><button class="brutal-btn brutal-btn-gold" onclick="addProd()">CRÉER</button></div>`;else renderDash()}
+async function addProd(){try{const t=document.getElementById('dti').value;const d=document.getElementById('ddesc').value;const p=parseFloat(document.getElementById('dpr').value);const s=parseInt(document.getElementById('dst').value);if(!t||!p)return alert('Titre et prix requis');await api.createProduct({title:t,description:d,price:p,stock:s||1,stockStatus:s>0?'in_stock':'out_of_stock',categoryId:1});alert('Produit créé !');renderDash()}catch(e){alert(e.message)}}
+
+// ADMIN
+async function renderAdmin(){if(!currentUser||currentUser.role==='user')return alert('Accès refusé'),showPage('home');const u=await api.getUsers();const c=await api.getCategories();document.getElementById('adminContent').innerHTML=`<h2>ADMIN</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:16px"><div class="brutal-card"><h3>UTILISATEURS</h3>${u.map(x=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:2px solid #000"><span>${x.name} — <span class="stock-badge ${x.role.includes('admin')?'stock-in-stock':'stock-low-stock'}">${x.role}</span><br><small>${x.email}</small></span>${currentUser.id!==x.id?`<button class="brutal-btn brutal-btn-cyan" onclick="tr(${x.id},'${x.role==='admin'?'user':'admin'}')" style="padding:4px 8px;font-size:10px">${x.role==='admin'?'RÉTROGRADER':'PROMOUVOIR'}</button>`:''}</div>`).join('')}</div><div class="brutal-card"><h3>CATÉGORIES</h3>${c.map(x=>`<div style="display:flex;justify-content:space-between;padding:4px 0"><span>${x.name}</span></div>`).join('')}<div style="display:flex;gap:8px;margin-top:12px"><input class="brutal-input" id="nc" placeholder="Nouvelle"><button class="brutal-btn brutal-btn-gold" onclick="ac()" style="padding:8px">+</button></div></div></div>`}
+async function tr(uid,rl){try{await api.updateUserRole(uid,rl);renderAdmin()}catch(e){alert(e.message)}}
+function ac(){const n=document.getElementById('nc').value;if(!n)return;_db.categories.push({id:_db.categories.length+1,name:n,slug:n.toLowerCase()});renderAdmin()}
+
+updateUI();
+renderHome();
+</script>
+</body>
+</html>

@@ -1,0 +1,1704 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ShopFlow API",
+    "version": "1.0.0",
+    "description": "API RESTful de la marketplace ShopFlow — une plateforme e-commerce avec portefeuille virtuel, bonus quotidiens et système de rôles. Permet la gestion des utilisateurs, produits, catégories, panier, commandes, avis, favoris et transactions du wallet."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api",
+      "description": "Serveur de développement local"
+    },
+    {
+      "url": "https://api.shopflow.dev",
+      "description": "Serveur de production"
+    }
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": ["Authentification"],
+        "summary": "Inscription d'un nouvel utilisateur",
+        "description": "Crée un compte utilisateur avec un solde initial de 10 000 crédits.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "email", "password"],
+                "properties": {
+                  "name": { "type": "string", "description": "Nom d'utilisateur", "example": "Jean Dupont" },
+                  "email": { "type": "string", "format": "email", "description": "Adresse email", "example": "jean.dupont@email.com" },
+                  "password": { "type": "string", "format": "password", "description": "Mot de passe (min. 8 caractères)", "example": "securePass123" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Utilisateur créé avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": { "$ref": "#/components/schemas/User" },
+                    "token": { "type": "string", "description": "Jeton JWT", "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides ou email déjà utilisé",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Authentification"],
+        "summary": "Connexion utilisateur",
+        "description": "Authentifie un utilisateur avec email et mot de passe, retourne un jeton JWT.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email", "description": "Adresse email", "example": "jean.dupont@email.com" },
+                  "password": { "type": "string", "format": "password", "description": "Mot de passe", "example": "securePass123" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Connexion réussie",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": { "$ref": "#/components/schemas/User" },
+                    "token": { "type": "string", "description": "Jeton JWT", "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Email ou mot de passe incorrect",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me": {
+      "get": {
+        "tags": ["Utilisateurs"],
+        "summary": "Profil de l'utilisateur connecté",
+        "description": "Retourne les informations du profil de l'utilisateur actuellement authentifié.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Profil utilisateur",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Utilisateurs"],
+        "summary": "Mise à jour du profil",
+        "description": "Met à jour le nom, l'email ou l'avatar de l'utilisateur connecté.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string", "description": "Nouveau nom", "example": "Jean Dupont" },
+                  "email": { "type": "string", "format": "email", "description": "Nouvel email", "example": "jean.dupont@email.com" },
+                  "avatar": { "type": "string", "format": "uri", "description": "URL de l'avatar", "example": "https://api.shopflow.dev/uploads/avatar.jpg" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profil mis à jour",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "tags": ["Utilisateurs"],
+        "summary": "Détails d'un utilisateur (admin)",
+        "description": "Retourne les informations d'un utilisateur par son ID. Réservé aux administrateurs.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "ID de l'utilisateur",
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Détails de l'utilisateur",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          },
+          "403": {
+            "description": "Accès refusé (admin uniquement)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": {
+            "description": "Utilisateur non trouvé",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products": {
+      "get": {
+        "tags": ["Produits"],
+        "summary": "Liste des produits",
+        "description": "Retourne une liste paginée de produits avec filtres optionnels par catégorie, prix, note, statut de stock et recherche textuelle.",
+        "parameters": [
+          { "name": "categoryId", "in": "query", "schema": { "type": "integer" }, "description": "Filtrer par catégorie", "example": 1 },
+          { "name": "minPrice", "in": "query", "schema": { "type": "number" }, "description": "Prix minimum", "example": 10 },
+          { "name": "maxPrice", "in": "query", "schema": { "type": "number" }, "description": "Prix maximum", "example": 100 },
+          { "name": "rating", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 5 }, "description": "Note minimale", "example": 4 },
+          { "name": "stockStatus", "in": "query", "schema": { "type": "string", "enum": ["in_stock", "low_stock", "out_of_stock", "pre_order"] }, "description": "Filtrer par statut de stock", "example": "in_stock" },
+          { "name": "search", "in": "query", "schema": { "type": "string" }, "description": "Recherche textuelle (titre, description)", "example": "ordinateur portable" },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1, "default": 1 }, "description": "Numéro de page", "example": 1 },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 }, "description": "Nombre d'éléments par page", "example": 20 }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste paginée des produits",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Product" }
+                    },
+                    "pagination": { "$ref": "#/components/schemas/Pagination" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Produits"],
+        "summary": "Créer un produit",
+        "description": "Crée un nouveau produit. L'utilisateur doit avoir le rôle vendeur.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title", "description", "price", "stock", "categoryId"],
+                "properties": {
+                  "title": { "type": "string", "description": "Titre du produit", "example": "Ordinateur Portable Pro X1" },
+                  "description": { "type": "string", "description": "Description détaillée", "example": "Ordinateur portable haute performance avec 16 Go de RAM et SSD 512 Go." },
+                  "price": { "type": "number", "description": "Prix en crédits", "example": 899.99 },
+                  "stock": { "type": "integer", "description": "Quantité en stock", "example": 50 },
+                  "stockStatus": { "type": "string", "enum": ["in_stock", "low_stock", "out_of_stock", "pre_order"], "description": "Statut du stock", "example": "in_stock" },
+                  "availabilityDate": { "type": "string", "format": "date", "nullable": true, "description": "Date de disponibilité (pour précommandes)", "example": "2026-08-15" },
+                  "categoryId": { "type": "integer", "description": "ID de la catégorie", "example": 1 },
+                  "images": {
+                    "type": "array",
+                    "description": "Images du produit",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "url": { "type": "string", "format": "uri", "description": "URL de l'image", "example": "https://api.shopflow.dev/uploads/product.jpg" },
+                        "order": { "type": "integer", "description": "Ordre d'affichage", "example": 1 }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Produit créé",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Product" }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/{id}": {
+      "get": {
+        "tags": ["Produits"],
+        "summary": "Détails d'un produit",
+        "description": "Retourne les informations complètes d'un produit, incluant le vendeur, les images et les avis.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "ID du produit",
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Détails du produit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/Product" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "seller": { "$ref": "#/components/schemas/User" },
+                        "reviews": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/Review" }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Produit non trouvé",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Produits"],
+        "summary": "Mettre à jour un produit",
+        "description": "Met à jour les informations d'un produit. Seul le vendeur du produit peut le modifier.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "ID du produit",
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string", "description": "Nouveau titre", "example": "Ordinateur Portable Pro X1" },
+                  "description": { "type": "string", "description": "Nouvelle description", "example": "Description mise à jour du produit." },
+                  "price": { "type": "number", "description": "Nouveau prix", "example": 799.99 },
+                  "stock": { "type": "integer", "description": "Nouvelle quantité en stock", "example": 30 },
+                  "stockStatus": { "type": "string", "enum": ["in_stock", "low_stock", "out_of_stock", "pre_order"], "description": "Nouveau statut de stock", "example": "in_stock" },
+                  "availabilityDate": { "type": "string", "format": "date", "nullable": true, "description": "Date de disponibilité", "example": "2026-08-15" },
+                  "categoryId": { "type": "integer", "description": "Nouvelle catégorie", "example": 2 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Produit mis à jour",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Product" }
+              }
+            }
+          },
+          "403": {
+            "description": "Vous n'êtes pas le vendeur de ce produit",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": {
+            "description": "Produit non trouvé",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Produits"],
+        "summary": "Supprimer un produit",
+        "description": "Supprime un produit. Seul le vendeur du produit peut le supprimer.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "ID du produit",
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Produit supprimé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Produit supprimé avec succès" }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Vous n'êtes pas le vendeur de ce produit",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": {
+            "description": "Produit non trouvé",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/{id}/reviews": {
+      "get": {
+        "tags": ["Produits"],
+        "summary": "Avis d'un produit",
+        "description": "Retourne la liste des avis pour un produit donné.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "ID du produit",
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste des avis",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Review" }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Produit non trouvé",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Avis"],
+        "summary": "Ajouter un avis",
+        "description": "Ajoute un avis sur un produit. L'utilisateur doit être connecté.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "ID du produit",
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["rating", "comment"],
+                "properties": {
+                  "rating": { "type": "integer", "minimum": 1, "maximum": 5, "description": "Note de 1 à 5", "example": 4 },
+                  "comment": { "type": "string", "description": "Commentaire", "example": "Excellent produit, livraison rapide !" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Avis créé",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Review" }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/categories": {
+      "get": {
+        "tags": ["Catégories"],
+        "summary": "Liste des catégories",
+        "description": "Retourne toutes les catégories disponibles.",
+        "responses": {
+          "200": {
+            "description": "Liste des catégories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Category" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Catégories"],
+        "summary": "Créer une catégorie (admin)",
+        "description": "Crée une nouvelle catégorie de produits. Réservé aux administrateurs.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "slug"],
+                "properties": {
+                  "name": { "type": "string", "description": "Nom de la catégorie", "example": "Informatique" },
+                  "slug": { "type": "string", "description": "Slug URL", "example": "informatique" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Catégorie créée",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Category" }
+              }
+            }
+          },
+          "403": {
+            "description": "Accès refusé (admin uniquement)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/categories/{id}": {
+      "put": {
+        "tags": ["Catégories"],
+        "summary": "Modifier une catégorie (admin)",
+        "description": "Met à jour le nom ou le slug d'une catégorie. Réservé aux administrateurs.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "ID de la catégorie",
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string", "description": "Nouveau nom", "example": "Informatique" },
+                  "slug": { "type": "string", "description": "Nouveau slug", "example": "informatique" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Catégorie mise à jour",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Category" }
+              }
+            }
+          },
+          "403": {
+            "description": "Accès refusé (admin uniquement)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": {
+            "description": "Catégorie non trouvée",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Catégories"],
+        "summary": "Supprimer une catégorie (admin)",
+        "description": "Supprime une catégorie. Réservé aux administrateurs.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "ID de la catégorie",
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Catégorie supprimée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Catégorie supprimée avec succès" }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Accès refusé (admin uniquement)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": {
+            "description": "Catégorie non trouvée",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cart": {
+      "get": {
+        "tags": ["Panier"],
+        "summary": "Panier de l'utilisateur",
+        "description": "Retourne le panier de l'utilisateur connecté avec tous ses articles.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Panier de l'utilisateur",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Cart" }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cart/items": {
+      "post": {
+        "tags": ["Panier"],
+        "summary": "Ajouter un article au panier",
+        "description": "Ajoute un produit au panier de l'utilisateur connecté. Vérifie que le stock est suffisant.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["productId", "quantity"],
+                "properties": {
+                  "productId": { "type": "integer", "description": "ID du produit", "example": 1 },
+                  "quantity": { "type": "integer", "minimum": 1, "description": "Quantité souhaitée", "example": 2 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Article ajouté au panier",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Cart" }
+              }
+            }
+          },
+          "400": {
+            "description": "Stock insuffisant ou produit inexistant",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cart/items/{id}": {
+      "put": {
+        "tags": ["Panier"],
+        "summary": "Modifier la quantité d'un article",
+        "description": "Met à jour la quantité d'un article dans le panier.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "ID de l'article du panier",
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["quantity"],
+                "properties": {
+                  "quantity": { "type": "integer", "minimum": 1, "description": "Nouvelle quantité", "example": 3 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Quantité mise à jour",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Cart" }
+              }
+            }
+          },
+          "400": {
+            "description": "Stock insuffisant",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": {
+            "description": "Article non trouvé dans le panier",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Panier"],
+        "summary": "Supprimer un article du panier",
+        "description": "Retire un article du panier de l'utilisateur connecté.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "ID de l'article du panier",
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Article retiré du panier",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Article retiré du panier" }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Article non trouvé dans le panier",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders": {
+      "post": {
+        "tags": ["Commandes"],
+        "summary": "Créer une commande",
+        "description": "Crée une commande à partir du panier de l'utilisateur. Valide les stocks et débite le wallet. Le panier est vidé après validation.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "shippingAddress": { "type": "string", "description": "Adresse de livraison", "example": "123 Rue de Paris, 75001 Paris" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Commande créée avec succès",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Order" }
+              }
+            }
+          },
+          "400": {
+            "description": "Stock insuffisant, panier vide ou solde insuffisant",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["Commandes"],
+        "summary": "Liste des commandes de l'utilisateur",
+        "description": "Retourne toutes les commandes de l'utilisateur connecté.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Liste des commandes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Order" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/{id}": {
+      "get": {
+        "tags": ["Commandes"],
+        "summary": "Détails d'une commande",
+        "description": "Retourne les informations détaillées d'une commande. L'acheteur et le vendeur peuvent voir la commande.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "ID de la commande",
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Détails de la commande",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Order" }
+              }
+            }
+          },
+          "404": {
+            "description": "Commande non trouvée",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/{id}/status": {
+      "put": {
+        "tags": ["Commandes"],
+        "summary": "Mettre à jour le statut d'une commande",
+        "description": "Permet au vendeur de marquer une commande comme expédiée, ou à l'acheteur de la marquer comme livrée.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "ID de la commande",
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["status"],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["shipped", "delivered"],
+                    "description": "Nouveau statut (shipped par le vendeur, delivered par l'acheteur)",
+                    "example": "shipped"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Statut mis à jour",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Order" }
+              }
+            }
+          },
+          "403": {
+            "description": "Action non autorisée",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": {
+            "description": "Commande non trouvée",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reviews/{id}": {
+      "delete": {
+        "tags": ["Avis"],
+        "summary": "Supprimer un avis",
+        "description": "Supprime un avis. Seul l'auteur de l'avis peut le supprimer.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "ID de l'avis",
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Avis supprimé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Avis supprimé avec succès" }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Vous n'êtes pas l'auteur de cet avis",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": {
+            "description": "Avis non trouvé",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/favorites": {
+      "get": {
+        "tags": ["Favoris"],
+        "summary": "Liste des favoris",
+        "description": "Retourne la liste des produits favoris de l'utilisateur connecté.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Liste des favoris",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Favorite" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Favoris"],
+        "summary": "Ajouter un favori",
+        "description": "Ajoute un produit aux favoris de l'utilisateur connecté.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["productId"],
+                "properties": {
+                  "productId": { "type": "integer", "description": "ID du produit", "example": 1 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Favori ajouté",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Favorite" }
+              }
+            }
+          },
+          "400": {
+            "description": "Produit déjà en favori",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/favorites/{id}": {
+      "delete": {
+        "tags": ["Favoris"],
+        "summary": "Supprimer un favori",
+        "description": "Retire un produit des favoris de l'utilisateur connecté.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "ID du favori",
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Favori supprimé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Favori supprimé avec succès" }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Favori non trouvé",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wallet": {
+      "get": {
+        "tags": ["Portefeuille"],
+        "summary": "Solde et historique du wallet",
+        "description": "Retourne le solde actuel et l'historique des transactions de l'utilisateur connecté.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Informations du wallet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "balance": { "type": "number", "description": "Solde actuel en crédits", "example": 12500 },
+                    "transactions": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Transaction" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wallet/bonus": {
+      "post": {
+        "tags": ["Portefeuille"],
+        "summary": "Réclamer le bonus quotidien",
+        "description": "Réclame le bonus quotidien de 500 crédits. Limité à une fois par jour.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Bonus réclamé avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Bonus quotidien de 500 crédits réclamé !" },
+                    "newBalance": { "type": "number", "description": "Nouveau solde", "example": 13000 }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bonus déjà réclamé aujourd'hui",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wallet/credit": {
+      "post": {
+        "tags": ["Portefeuille"],
+        "summary": "Créditer un utilisateur (admin)",
+        "description": "Ajoute ou retire des crédits du wallet d'un utilisateur. Réservé aux administrateurs.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["userId", "amount"],
+                "properties": {
+                  "userId": { "type": "integer", "description": "ID de l'utilisateur", "example": 1 },
+                  "amount": { "type": "number", "description": "Montant à créditer (négatif pour débiter)", "example": 1000 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Compte crédité",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Compte crédité avec succès" },
+                    "newBalance": { "type": "number", "description": "Nouveau solde", "example": 14000 }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Accès refusé (admin uniquement)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "tags": ["Administration"],
+        "summary": "Liste des utilisateurs (admin)",
+        "description": "Retourne la liste de tous les utilisateurs. Réservé aux administrateurs.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Liste des utilisateurs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/User" }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Accès refusé (admin uniquement)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users/{id}/role": {
+      "put": {
+        "tags": ["Administration"],
+        "summary": "Modifier le rôle d'un utilisateur (admin)",
+        "description": "Change le rôle d'un utilisateur. Réservé aux super administrateurs.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "ID de l'utilisateur",
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["role"],
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "enum": ["super_admin", "admin", "user"],
+                    "description": "Nouveau rôle",
+                    "example": "admin"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rôle mis à jour",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          },
+          "403": {
+            "description": "Accès refusé (super_admin uniquement)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": {
+            "description": "Utilisateur non trouvé",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users/{id}/credit": {
+      "put": {
+        "tags": ["Administration"],
+        "summary": "Créditer un utilisateur (admin)",
+        "description": "Ajoute ou retire des crédits du wallet d'un utilisateur. Réservé aux administrateurs.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "ID de l'utilisateur",
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["amount"],
+                "properties": {
+                  "amount": { "type": "number", "description": "Montant à créditer (négatif pour débiter)", "example": 500 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Compte crédité",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Compte crédité avec succès" },
+                    "newBalance": { "type": "number", "description": "Nouveau solde", "example": 15000 }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Accès refusé (admin uniquement)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": {
+            "description": "Utilisateur non trouvé",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/invite": {
+      "post": {
+        "tags": ["Administration"],
+        "summary": "Inviter un administrateur",
+        "description": "Envoie une invitation à un email pour devenir administrateur. Réservé aux super administrateurs.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email"],
+                "properties": {
+                  "email": { "type": "string", "format": "email", "description": "Email de l'invité", "example": "nouvel.admin@email.com" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Invitation envoyée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Invitation envoyée avec succès" }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Accès refusé (super_admin uniquement)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Authentification par jeton JWT. Inclure le jeton dans l'en-tête Authorization: Bearer <token>"
+      }
+    },
+    "schemas": {
+      "User": {
+        "$id": "#/components/schemas/User",
+        "type": "object",
+        "description": "Représente un utilisateur de la plateforme. Chaque utilisateur peut être acheteur et vendeur.",
+        "properties": {
+          "id": { "type": "integer", "description": "Identifiant unique de l'utilisateur", "example": 1 },
+          "name": { "type": "string", "description": "Nom d'affichage de l'utilisateur", "example": "Jean Dupont" },
+          "email": { "type": "string", "format": "email", "description": "Adresse email de l'utilisateur", "example": "jean.dupont@email.com" },
+          "password": { "type": "string", "format": "password", "writeOnly": true, "description": "Mot de passe de l'utilisateur (jamais retourné dans les réponses)", "example": "securePass123" },
+          "avatar": { "type": "string", "format": "uri", "nullable": true, "description": "URL de l'avatar de l'utilisateur", "example": "https://api.shopflow.dev/uploads/avatar.jpg" },
+          "role": { "type": "string", "enum": ["super_admin", "admin", "user"], "description": "Rôle de l'utilisateur", "example": "user" },
+          "walletBalance": { "type": "number", "description": "Solde du portefeuille virtuel en crédits", "example": 10000 },
+          "dailyBonusDate": { "type": "string", "format": "date", "nullable": true, "description": "Date du dernier bonus quotidien réclamé (null si jamais réclamé)", "example": "2026-07-24" },
+          "createdAt": { "type": "string", "format": "date-time", "description": "Date de création du compte", "example": "2026-07-01T10:30:00Z" }
+        },
+        "required": ["id", "name", "email", "role", "walletBalance", "createdAt"]
+      },
+      "Category": {
+        "$id": "#/components/schemas/Category",
+        "type": "object",
+        "description": "Catégorie de produits permettant d'organiser le catalogue.",
+        "properties": {
+          "id": { "type": "integer", "description": "Identifiant unique de la catégorie", "example": 1 },
+          "name": { "type": "string", "description": "Nom de la catégorie", "example": "Informatique" },
+          "slug": { "type": "string", "description": "Identifiant URL de la catégorie", "example": "informatique" }
+        },
+        "required": ["id", "name", "slug"]
+      },
+      "Product": {
+        "$id": "#/components/schemas/Product",
+        "type": "object",
+        "description": "Produit mis en vente sur la marketplace par un vendeur.",
+        "properties": {
+          "id": { "type": "integer", "description": "Identifiant unique du produit", "example": 1 },
+          "title": { "type": "string", "description": "Titre du produit", "example": "Ordinateur Portable Pro X1" },
+          "description": { "type": "string", "description": "Description détaillée du produit", "example": "Ordinateur portable haute performance avec processeur Intel i7, 16 Go de RAM et SSD 512 Go." },
+          "price": { "type": "number", "description": "Prix du produit en crédits", "example": 899.99 },
+          "stock": { "type": "integer", "description": "Quantité disponible en stock", "example": 50 },
+          "stockStatus": { "type": "string", "enum": ["in_stock", "low_stock", "out_of_stock", "pre_order"], "description": "Statut de disponibilité du stock", "example": "in_stock" },
+          "availabilityDate": { "type": "string", "format": "date", "nullable": true, "description": "Date à laquelle le produit sera disponible (pour les précommandes et ruptures)", "example": "2026-08-15" },
+          "categoryId": { "type": "integer", "description": "Identifiant de la catégorie associée", "example": 1 },
+          "sellerId": { "type": "integer", "description": "Identifiant du vendeur", "example": 2 },
+          "images": {
+            "type": "array",
+            "description": "Liste des images du produit",
+            "items": { "$ref": "#/components/schemas/ProductImage" }
+          },
+          "createdAt": { "type": "string", "format": "date-time", "description": "Date de mise en ligne", "example": "2026-07-15T14:30:00Z" }
+        },
+        "required": ["id", "title", "description", "price", "stock", "stockStatus", "categoryId", "sellerId", "createdAt"]
+      },
+      "ProductImage": {
+        "$id": "#/components/schemas/ProductImage",
+        "type": "object",
+        "description": "Image associée à un produit. Un produit peut avoir plusieurs images.",
+        "properties": {
+          "id": { "type": "integer", "description": "Identifiant unique de l'image", "example": 1 },
+          "productId": { "type": "integer", "description": "Identifiant du produit associé", "example": 1 },
+          "url": { "type": "string", "format": "uri", "description": "URL de l'image", "example": "https://api.shopflow.dev/uploads/product-1.jpg" },
+          "order": { "type": "integer", "description": "Ordre d'affichage (0 = image principale)", "example": 0 }
+        },
+        "required": ["id", "productId", "url", "order"]
+      },
+      "Order": {
+        "$id": "#/components/schemas/Order",
+        "type": "object",
+        "description": "Commande passée par un acheteur. Contient les articles achetés et suit le statut de livraison.",
+        "properties": {
+          "id": { "type": "integer", "description": "Identifiant unique de la commande", "example": 1 },
+          "buyerId": { "type": "integer", "description": "Identifiant de l'acheteur", "example": 1 },
+          "total": { "type": "number", "description": "Montant total de la commande en crédits", "example": 1799.98 },
+          "status": { "type": "string", "enum": ["pending", "paid", "shipped", "delivered"], "description": "Statut actuel de la commande", "example": "pending" },
+          "items": {
+            "type": "array",
+            "description": "Articles inclus dans la commande",
+            "items": { "$ref": "#/components/schemas/OrderItem" }
+          },
+          "createdAt": { "type": "string", "format": "date-time", "description": "Date de création de la commande", "example": "2026-07-24T15:00:00Z" }
+        },
+        "required": ["id", "buyerId", "total", "status", "items", "createdAt"]
+      },
+      "OrderItem": {
+        "$id": "#/components/schemas/OrderItem",
+        "type": "object",
+        "description": "Ligne d'achat dans une commande, représentant un produit et sa quantité.",
+        "properties": {
+          "id": { "type": "integer", "description": "Identifiant unique de la ligne", "example": 1 },
+          "orderId": { "type": "integer", "description": "Identifiant de la commande associée", "example": 1 },
+          "productId": { "type": "integer", "description": "Identifiant du produit acheté", "example": 1 },
+          "quantity": { "type": "integer", "description": "Quantité achetée", "example": 2 },
+          "price": { "type": "number", "description": "Prix unitaire au moment de l'achat", "example": 899.99 }
+        },
+        "required": ["id", "orderId", "productId", "quantity", "price"]
+      },
+      "Review": {
+        "$id": "#/components/schemas/Review",
+        "type": "object",
+        "description": "Avis laissé par un utilisateur sur un produit, avec une note et un commentaire.",
+        "properties": {
+          "id": { "type": "integer", "description": "Identifiant unique de l'avis", "example": 1 },
+          "productId": { "type": "integer", "description": "Identifiant du produit concerné", "example": 1 },
+          "userId": { "type": "integer", "description": "Identifiant de l'auteur de l'avis", "example": 1 },
+          "rating": { "type": "integer", "minimum": 1, "maximum": 5, "description": "Note attribuée au produit (1 à 5)", "example": 4 },
+          "comment": { "type": "string", "description": "Commentaire détaillé de l'avis", "example": "Excellent produit, livraison rapide !" },
+          "createdAt": { "type": "string", "format": "date-time", "description": "Date de publication de l'avis", "example": "2026-07-24T18:00:00Z" }
+        },
+        "required": ["id", "productId", "userId", "rating", "comment", "createdAt"]
+      },
+      "Favorite": {
+        "$id": "#/components/schemas/Favorite",
+        "type": "object",
+        "description": "Association entre un utilisateur et un produit favori.",
+        "properties": {
+          "id": { "type": "integer", "description": "Identifiant unique du favori", "example": 1 },
+          "userId": { "type": "integer", "description": "Identifiant de l'utilisateur", "example": 1 },
+          "productId": { "type": "integer", "description": "Identifiant du produit favori", "example": 1 }
+        },
+        "required": ["id", "userId", "productId"]
+      },
+      "Transaction": {
+        "$id": "#/components/schemas/Transaction",
+        "type": "object",
+        "description": "Mouvement financier sur le portefeuille virtuel d'un utilisateur.",
+        "properties": {
+          "id": { "type": "integer", "description": "Identifiant unique de la transaction", "example": 1 },
+          "userId": { "type": "integer", "description": "Identifiant de l'utilisateur concerné", "example": 1 },
+          "amount": { "type": "number", "description": "Montant de la transaction (positif = crédit, négatif = débit)", "example": 500 },
+          "type": { "type": "string", "enum": ["credit", "debit", "bonus", "sale", "purchase"], "description": "Type de transaction", "example": "bonus" },
+          "description": { "type": "string", "description": "Description de la transaction", "example": "Bonus quotidien" },
+          "createdAt": { "type": "string", "format": "date-time", "description": "Date de la transaction", "example": "2026-07-24T09:00:00Z" }
+        },
+        "required": ["id", "userId", "amount", "type", "description", "createdAt"]
+      },
+      "Cart": {
+        "$id": "#/components/schemas/Cart",
+        "type": "object",
+        "description": "Panier d'achat de l'utilisateur, contenant les articles sélectionnés avant passage en commande.",
+        "properties": {
+          "id": { "type": "integer", "description": "Identifiant unique du panier", "example": 1 },
+          "userId": { "type": "integer", "description": "Identifiant de l'utilisateur propriétaire du panier", "example": 1 },
+          "items": {
+            "type": "array",
+            "description": "Articles dans le panier",
+            "items": { "$ref": "#/components/schemas/CartItem" }
+          }
+        },
+        "required": ["id", "userId", "items"]
+      },
+      "CartItem": {
+        "$id": "#/components/schemas/CartItem",
+        "type": "object",
+        "description": "Ligne d'un panier représentant un produit avec sa quantité.",
+        "properties": {
+          "id": { "type": "integer", "description": "Identifiant unique de la ligne", "example": 1 },
+          "cartId": { "type": "integer", "description": "Identifiant du panier associé", "example": 1 },
+          "productId": { "type": "integer", "description": "Identifiant du produit", "example": 1 },
+          "quantity": { "type": "integer", "description": "Quantité souhaitée", "example": 2 }
+        },
+        "required": ["id", "cartId", "productId", "quantity"]
+      },
+      "WalletBonus": {
+        "$id": "#/components/schemas/WalletBonus",
+        "type": "object",
+        "description": "Bonus quotidien réclamé par un utilisateur.",
+        "properties": {
+          "id": { "type": "integer", "description": "Identifiant unique du bonus", "example": 1 },
+          "userId": { "type": "integer", "description": "Identifiant de l'utilisateur", "example": 1 },
+          "amount": { "type": "number", "description": "Montant du bonus en crédits", "example": 500 },
+          "claimedAt": { "type": "string", "format": "date-time", "description": "Date et heure de réclamation", "example": "2026-07-24T09:00:00Z" }
+        },
+        "required": ["id", "userId", "amount", "claimedAt"]
+      },
+      "Error": {
+        "$id": "#/components/schemas/Error",
+        "type": "object",
+        "description": "Message d'erreur retourné par l'API en cas d'échec d'une requête.",
+        "properties": {
+          "error": { "type": "string", "description": "Message d'erreur décrivant le problème", "example": "Email ou mot de passe incorrect" },
+          "statusCode": { "type": "integer", "description": "Code HTTP de l'erreur", "example": 401 }
+        },
+        "required": ["error"]
+      },
+      "Pagination": {
+        "$id": "#/components/schemas/Pagination",
+        "type": "object",
+        "description": "Informations de pagination pour les listes d'éléments.",
+        "properties": {
+          "page": { "type": "integer", "description": "Page actuelle", "example": 1 },
+          "limit": { "type": "integer", "description": "Nombre d'éléments par page", "example": 20 },
+          "total": { "type": "integer", "description": "Nombre total d'éléments", "example": 150 },
+          "totalPages": { "type": "integer", "description": "Nombre total de pages", "example": 8 }
+        },
+        "required": ["page", "limit", "total", "totalPages"]
+      }
+    }
+  }
+}

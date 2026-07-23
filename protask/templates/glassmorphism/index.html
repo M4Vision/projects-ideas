@@ -1,0 +1,1919 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>ProTask</title>
+	<style>
+		*,
+		*::before,
+		*::after {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		:root {
+			--bg-start: #0f0c29;
+			--bg-mid: #302b63;
+			--bg-end: #24243e;
+			--glass-bg: rgba(255, 255, 255, 0.07);
+			--glass-border: rgba(255, 255, 255, 0.12);
+			--glass-bg-hover: rgba(255, 255, 255, 0.12);
+			--text-primary: #ffffff;
+			--text-secondary: rgba(255, 255, 255, 0.7);
+			--text-muted: rgba(255, 255, 255, 0.45);
+			--accent: #00d4ff;
+			--accent-glow: rgba(0, 212, 255, 0.3);
+			--purple: #a855f7;
+			--purple-glow: rgba(168, 85, 247, 0.3);
+			--radius: 16px;
+			--radius-sm: 10px;
+			--radius-xs: 6px;
+			--font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+			--shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+			--transition: 0.25s ease;
+		}
+
+		html,
+		body {
+			height: 100%;
+			font-family: var(--font);
+			background: linear-gradient(135deg, var(--bg-start), var(--bg-mid), var(--bg-end));
+			color: var(--text-primary);
+			overflow: hidden;
+		}
+
+		/* ── Animated background orbs ── */
+		body::before,
+		body::after {
+			content: '';
+			position: fixed;
+			border-radius: 50%;
+			filter: blur(80px);
+			pointer-events: none;
+			z-index: 0;
+		}
+
+		body::before {
+			width: 500px;
+			height: 500px;
+			background: rgba(0, 212, 255, 0.15);
+			top: -150px;
+			left: -150px;
+			animation: floatOrb 20s ease-in-out infinite alternate;
+		}
+
+		body::after {
+			width: 400px;
+			height: 400px;
+			background: rgba(168, 85, 247, 0.12);
+			bottom: -100px;
+			right: -100px;
+			animation: floatOrb 25s ease-in-out infinite alternate-reverse;
+		}
+
+		@keyframes floatOrb {
+			0% {
+				transform: translate(0, 0) scale(1);
+			}
+
+			100% {
+				transform: translate(80px, 60px) scale(1.25);
+			}
+		}
+
+		/* third orb via extra pseudo trick */
+		.bg-orb {
+			position: fixed;
+			width: 350px;
+			height: 350px;
+			border-radius: 50%;
+			background: rgba(255, 200, 50, 0.06);
+			filter: blur(100px);
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			pointer-events: none;
+			z-index: 0;
+			animation: floatOrb2 18s ease-in-out infinite alternate;
+		}
+
+		@keyframes floatOrb2 {
+			0% {
+				transform: translate(-50%, -50%) scale(1);
+			}
+
+			100% {
+				transform: translate(-30%, -40%) scale(1.35);
+			}
+		}
+
+		/* ── Layout ── */
+		#app {
+			position: relative;
+			z-index: 1;
+			display: flex;
+			flex-direction: column;
+			height: 100vh;
+			max-width: 1400px;
+			margin: 0 auto;
+			padding: 0 24px;
+		}
+
+		/* ── Navbar ── */
+		nav {
+			display: flex;
+			align-items: center;
+			gap: 4px;
+			padding: 16px 0 12px;
+			border-bottom: 1px solid var(--glass-border);
+			flex-shrink: 0;
+		}
+
+		.nav-brand {
+			font-size: 1.35rem;
+			font-weight: 700;
+			background: linear-gradient(135deg, var(--accent), var(--purple));
+			-webkit-background-clip: text;
+			background-clip: text;
+			-webkit-text-fill-color: transparent;
+			margin-right: auto;
+			letter-spacing: -0.5px;
+			user-select: none;
+		}
+
+		.nav-tab {
+			background: transparent;
+			border: none;
+			color: var(--text-muted);
+			font-family: var(--font);
+			font-size: 0.875rem;
+			font-weight: 500;
+			padding: 8px 18px;
+			border-radius: 8px;
+			cursor: pointer;
+			transition: var(--transition);
+			position: relative;
+		}
+
+		.nav-tab:hover {
+			color: var(--text-secondary);
+			background: var(--glass-bg);
+		}
+
+		.nav-tab.active {
+			color: var(--accent);
+			background: rgba(0, 212, 255, 0.1);
+		}
+
+		.nav-tab.active::after {
+			content: '';
+			position: absolute;
+			bottom: -1px;
+			left: 18px;
+			right: 18px;
+			height: 2px;
+			background: var(--accent);
+			border-radius: 2px;
+			box-shadow: 0 0 12px var(--accent-glow);
+		}
+
+		/* ── Pages ── */
+		.page {
+			display: none;
+			flex: 1;
+			padding: 24px 0;
+			overflow-y: auto;
+			scrollbar-width: thin;
+			scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+		}
+
+		.page.active {
+			display: flex;
+			flex-direction: column;
+		}
+
+		.page::-webkit-scrollbar {
+			width: 5px;
+		}
+
+		.page::-webkit-scrollbar-track {
+			background: transparent;
+		}
+
+		.page::-webkit-scrollbar-thumb {
+			background: rgba(255, 255, 255, 0.15);
+			border-radius: 10px;
+		}
+
+		/* ── Glass card ── */
+		.glass {
+			background: var(--glass-bg);
+			backdrop-filter: blur(20px);
+			-webkit-backdrop-filter: blur(20px);
+			border: 1px solid var(--glass-border);
+			border-radius: var(--radius);
+			box-shadow: var(--shadow);
+		}
+
+		/* ── Buttons ── */
+		.btn {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			gap: 8px;
+			padding: 10px 22px;
+			border: 1px solid var(--glass-border);
+			border-radius: var(--radius-sm);
+			font-family: var(--font);
+			font-size: 0.875rem;
+			font-weight: 600;
+			cursor: pointer;
+			transition: var(--transition);
+			background: var(--glass-bg);
+			color: var(--text-primary);
+			backdrop-filter: blur(10px);
+			-webkit-backdrop-filter: blur(10px);
+		}
+
+		.btn:hover {
+			background: var(--glass-bg-hover);
+			box-shadow: 0 0 20px var(--accent-glow);
+			border-color: rgba(0, 212, 255, 0.3);
+		}
+
+		.btn-primary {
+			background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(168, 85, 247, 0.2));
+			border-color: rgba(0, 212, 255, 0.25);
+		}
+
+		.btn-primary:hover {
+			background: linear-gradient(135deg, rgba(0, 212, 255, 0.3), rgba(168, 85, 247, 0.3));
+			box-shadow: 0 0 25px var(--accent-glow);
+		}
+
+		.btn-sm {
+			padding: 6px 14px;
+			font-size: 0.8rem;
+		}
+
+		/* ── Inputs ── */
+		.input {
+			width: 100%;
+			padding: 12px 16px;
+			background: rgba(255, 255, 255, 0.06);
+			border: 1px solid var(--glass-border);
+			border-radius: var(--radius-sm);
+			color: var(--text-primary);
+			font-family: var(--font);
+			font-size: 0.9rem;
+			transition: var(--transition);
+			outline: none;
+		}
+
+		.input:focus {
+			border-color: var(--accent);
+			box-shadow: 0 0 0 3px var(--accent-glow);
+		}
+
+		.input::placeholder {
+			color: var(--text-muted);
+		}
+
+		textarea.input {
+			resize: vertical;
+			min-height: 80px;
+		}
+
+		label {
+			display: block;
+			font-size: 0.8rem;
+			font-weight: 500;
+			color: var(--text-secondary);
+			margin-bottom: 6px;
+		}
+
+		/* ── LOGIN PAGE ── */
+		#page-login.active {
+			align-items: center;
+			justify-content: center;
+		}
+
+		.login-card {
+			width: 100%;
+			max-width: 400px;
+			padding: 40px 36px;
+			text-align: center;
+		}
+
+		.login-logo {
+			font-size: 2rem;
+			font-weight: 800;
+			background: linear-gradient(135deg, var(--accent), var(--purple));
+			-webkit-background-clip: text;
+			background-clip: text;
+			-webkit-text-fill-color: transparent;
+			margin-bottom: 6px;
+		}
+
+		.login-sub {
+			color: var(--text-muted);
+			font-size: 0.85rem;
+			margin-bottom: 28px;
+		}
+
+		.login-card .input {
+			margin-bottom: 14px;
+		}
+
+		.login-card .btn {
+			width: 100%;
+			margin-top: 6px;
+		}
+
+		.login-link {
+			display: block;
+			margin-top: 16px;
+			color: var(--text-muted);
+			font-size: 0.85rem;
+			cursor: pointer;
+			transition: var(--transition);
+		}
+
+		.login-link:hover {
+			color: var(--accent);
+		}
+
+		.login-toggle {
+			display: none;
+		}
+
+		.login-toggle.show {
+			display: block;
+		}
+
+		/* ── DASHBOARD PAGE ── */
+		.dash-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			margin-bottom: 20px;
+			flex-shrink: 0;
+		}
+
+		.dash-header h1 {
+			font-size: 1.5rem;
+			font-weight: 700;
+		}
+
+		.board-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+			gap: 18px;
+		}
+
+		.board-card {
+			padding: 20px;
+			cursor: pointer;
+			transition: var(--transition);
+			border-left: 4px solid var(--accent);
+			position: relative;
+			overflow: hidden;
+		}
+
+		.board-card:hover {
+			background: var(--glass-bg-hover);
+			transform: translateY(-2px);
+			box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+		}
+
+		.board-card h3 {
+			font-size: 1.05rem;
+			font-weight: 600;
+			margin-bottom: 4px;
+		}
+
+		.board-card p {
+			font-size: 0.8rem;
+			color: var(--text-muted);
+		}
+
+		.board-meta {
+			display: flex;
+			gap: 16px;
+			margin-top: 12px;
+			font-size: 0.8rem;
+			color: var(--text-secondary);
+		}
+
+		.board-meta span {
+			display: flex;
+			align-items: center;
+			gap: 5px;
+		}
+
+		/* ── BOARD PAGE (Kanban) ── */
+		.board-top {
+			display: flex;
+			align-items: center;
+			gap: 14px;
+			margin-bottom: 20px;
+			flex-shrink: 0;
+			flex-wrap: wrap;
+		}
+
+		.board-top h2 {
+			font-size: 1.3rem;
+			font-weight: 700;
+		}
+
+		.avatar-stack {
+			display: flex;
+		}
+
+		.avatar,
+		.avatar-sm {
+			width: 34px;
+			height: 34px;
+			border-radius: 50%;
+			border: 2px solid rgba(255, 255, 255, 0.15);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 0.75rem;
+			font-weight: 600;
+			margin-left: -6px;
+			background: linear-gradient(135deg, var(--accent), var(--purple));
+			color: #fff;
+			flex-shrink: 0;
+		}
+
+		.avatar:first-child,
+		.avatar-sm:first-child {
+			margin-left: 0;
+		}
+
+		.avatar-sm {
+			width: 28px;
+			height: 28px;
+			font-size: 0.65rem;
+		}
+
+		.board-columns {
+			display: flex;
+			gap: 16px;
+			flex: 1;
+			overflow-x: auto;
+			padding-bottom: 8px;
+			scrollbar-width: thin;
+			scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+		}
+
+		.board-columns::-webkit-scrollbar {
+			height: 5px;
+		}
+
+		.board-columns::-webkit-scrollbar-thumb {
+			background: rgba(255, 255, 255, 0.15);
+			border-radius: 10px;
+		}
+
+		.column {
+			min-width: 300px;
+			max-width: 340px;
+			flex: 1;
+			padding: 16px;
+			display: flex;
+			flex-direction: column;
+			max-height: 100%;
+		}
+
+		.column-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			margin-bottom: 14px;
+			padding-bottom: 10px;
+			border-bottom: 1px solid var(--glass-border);
+			flex-shrink: 0;
+		}
+
+		.column-header h3 {
+			font-size: 0.95rem;
+			font-weight: 600;
+		}
+
+		.column-count {
+			background: rgba(255, 255, 255, 0.1);
+			padding: 2px 10px;
+			border-radius: 20px;
+			font-size: 0.75rem;
+			color: var(--text-secondary);
+		}
+
+		.column-cards {
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+			overflow-y: auto;
+			flex: 1;
+			scrollbar-width: thin;
+			scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+		}
+
+		.column-cards::-webkit-scrollbar {
+			width: 4px;
+		}
+
+		.column-cards::-webkit-scrollbar-thumb {
+			background: rgba(255, 255, 255, 0.1);
+			border-radius: 10px;
+		}
+
+		.task-card {
+			padding: 14px;
+			border-radius: var(--radius-sm);
+			background: rgba(255, 255, 255, 0.04);
+			border: 1px solid var(--glass-border);
+			cursor: pointer;
+			transition: var(--transition);
+		}
+
+		.task-card:hover {
+			background: rgba(255, 255, 255, 0.08);
+			border-color: rgba(0, 212, 255, 0.2);
+		}
+
+		.task-card h4 {
+			font-size: 0.85rem;
+			font-weight: 600;
+			margin-bottom: 8px;
+		}
+
+		.task-labels {
+			display: flex;
+			gap: 5px;
+			flex-wrap: wrap;
+			margin-bottom: 8px;
+		}
+
+		.label-pill {
+			padding: 2px 10px;
+			border-radius: 20px;
+			font-size: 0.65rem;
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.3px;
+		}
+
+		.task-footer {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			font-size: 0.75rem;
+			color: var(--text-muted);
+		}
+
+		.task-footer .avatar-sm {
+			margin-left: 0;
+		}
+
+		/* ── Modal / Task detail ── */
+		.modal-overlay {
+			display: none;
+			position: fixed;
+			inset: 0;
+			background: rgba(0, 0, 0, 0.55);
+			backdrop-filter: blur(6px);
+			-webkit-backdrop-filter: blur(6px);
+			z-index: 100;
+			align-items: center;
+			justify-content: center;
+			padding: 24px;
+		}
+
+		.modal-overlay.show {
+			display: flex;
+		}
+
+		.modal {
+			width: 100%;
+			max-width: 560px;
+			max-height: 85vh;
+			padding: 28px;
+			overflow-y: auto;
+			scrollbar-width: thin;
+			scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+		}
+
+		.modal::-webkit-scrollbar {
+			width: 5px;
+		}
+
+		.modal::-webkit-scrollbar-thumb {
+			background: rgba(255, 255, 255, 0.15);
+			border-radius: 10px;
+		}
+
+		.modal-close {
+			float: right;
+			background: none;
+			border: none;
+			color: var(--text-muted);
+			font-size: 1.4rem;
+			cursor: pointer;
+			transition: var(--transition);
+			line-height: 1;
+		}
+
+		.modal-close:hover {
+			color: var(--text-primary);
+		}
+
+		.modal h2 {
+			font-size: 1.15rem;
+			font-weight: 700;
+			margin-bottom: 4px;
+		}
+
+		.modal .label-pill {
+			display: inline-block;
+			margin: 8px 0 12px;
+		}
+
+		.modal p {
+			font-size: 0.85rem;
+			color: var(--text-secondary);
+			line-height: 1.6;
+			margin-bottom: 16px;
+		}
+
+		.modal h5 {
+			font-size: 0.85rem;
+			font-weight: 600;
+			color: var(--text-secondary);
+			margin-bottom: 10px;
+		}
+
+		.comment {
+			display: flex;
+			gap: 10px;
+			margin-bottom: 12px;
+		}
+
+		.comment .avatar-sm {
+			flex-shrink: 0;
+		}
+
+		.comment-body {
+			flex: 1;
+		}
+
+		.comment-body strong {
+			font-size: 0.8rem;
+			display: block;
+		}
+
+		.comment-body span {
+			font-size: 0.78rem;
+			color: var(--text-secondary);
+		}
+
+		.comment-body small {
+			font-size: 0.65rem;
+			color: var(--text-muted);
+			display: block;
+			margin-top: 2px;
+		}
+
+		.modal .input {
+			margin-top: 8px;
+		}
+
+		/* ── SETTINGS PAGE ── */
+		.settings-form {
+			width: min(100%, 640px);
+			max-width: 640px;
+			margin: 0 auto;
+		}
+
+		.settings-form .glass {
+			padding: 24px;
+			margin-bottom: 18px;
+		}
+
+		.settings-form h3 {
+			font-size: 1rem;
+			font-weight: 600;
+			margin-bottom: 14px;
+			color: var(--text-secondary);
+		}
+
+		.settings-form .input {
+			margin-bottom: 14px;
+		}
+
+		.settings-row {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			padding: 10px 0;
+			border-bottom: 1px solid var(--glass-border);
+		}
+
+		.settings-row:last-child {
+			border-bottom: none;
+		}
+
+		.settings-row span {
+			flex: 1;
+			font-size: 0.85rem;
+		}
+
+		.settings-row .btn-sm {
+			flex-shrink: 0;
+		}
+
+		.color-preview {
+			width: 20px;
+			height: 20px;
+			border-radius: 50%;
+			flex-shrink: 0;
+			border: 1px solid rgba(255, 255, 255, 0.2);
+		}
+
+		.color-picker-wrap {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			flex: 1;
+		}
+
+		.color-picker-wrap input[type="color"] {
+			width: 30px;
+			height: 30px;
+			border: 1px solid var(--glass-border);
+			border-radius: 6px;
+			background: transparent;
+			cursor: pointer;
+			padding: 2px;
+		}
+
+		.settings-form>.btn {
+			margin-top: 6px;
+		}
+
+		/* ── PROFILE PAGE ── */
+		#page-profile.active {
+			align-items: center;
+		}
+
+		.profile-card {
+			width: 100%;
+			max-width: 480px;
+			padding: 32px;
+			text-align: center;
+		}
+
+		.profile-avatar {
+			width: 80px;
+			height: 80px;
+			border-radius: 50%;
+			background: linear-gradient(135deg, var(--accent), var(--purple));
+			border: 3px solid rgba(255, 255, 255, 0.15);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 2rem;
+			font-weight: 700;
+			margin: 0 auto 16px;
+		}
+
+		.profile-card .input {
+			text-align: left;
+			margin-bottom: 14px;
+		}
+
+		.profile-link {
+			display: block;
+			color: var(--text-muted);
+			font-size: 0.85rem;
+			cursor: pointer;
+			transition: var(--transition);
+			margin-bottom: 18px;
+			text-align: left;
+		}
+
+		.profile-link:hover {
+			color: var(--accent);
+		}
+
+		.profile-card .btn {
+			width: 100%;
+		}
+
+		/* ── Responsive ── */
+
+		/* ≥1440px — large screens: comfortable spacing, wider columns */
+		@media (min-width: 1440px) {
+			#app {
+				padding: 0 32px;
+			}
+
+			.column {
+				min-width: 340px;
+				max-width: 380px;
+			}
+
+			.login-card {
+				padding: 48px 44px;
+			}
+
+			.modal {
+				padding: 36px;
+				max-width: 640px;
+			}
+
+			.dash-header h1 {
+				font-size: 1.75rem;
+			}
+
+			.board-top h2 {
+				font-size: 1.5rem;
+			}
+
+			.board-card {
+				padding: 24px;
+			}
+		}
+
+		/* ≤1200px — tighter padding, slightly narrower columns */
+		@media (max-width: 1200px) {
+			#app {
+				padding: 0 18px;
+			}
+
+			.column {
+				min-width: 270px;
+				max-width: 310px;
+			}
+		}
+
+		/* ≤1024px — 3-column kanban still visible, tighter spacing */
+		@media (max-width: 1024px) {
+			#app {
+				padding: 0 14px;
+			}
+
+			.column {
+				min-width: 240px;
+				max-width: 280px;
+				gap: 12px;
+			}
+
+			.board-columns {
+				gap: 12px;
+			}
+
+			.nav-tab {
+				padding: 6px 12px;
+				font-size: 0.8rem;
+			}
+
+			.dash-header h1 {
+				font-size: 1.35rem;
+			}
+
+			.board-top h2 {
+				font-size: 1.15rem;
+			}
+		}
+
+		/* ≤768px — tablet: 2-column kanban, dashboard 2 cols, nav wraps */
+		@media (max-width: 768px) {
+
+			html,
+			body {
+				overflow: auto;
+			}
+
+			#app {
+				height: auto;
+				min-height: 100vh;
+				padding: 0 12px;
+			}
+
+			nav {
+				flex-wrap: wrap;
+				gap: 2px;
+				padding: 10px 0 8px;
+			}
+
+			.nav-brand {
+				width: 100%;
+				margin-bottom: 2px;
+				font-size: 1.2rem;
+			}
+
+			.nav-tab {
+				flex: 1;
+				text-align: center;
+				padding: 10px 6px;
+				font-size: 0.75rem;
+				min-height: 44px;
+			}
+
+			.nav-tab.active::after {
+				left: 6px;
+				right: 6px;
+			}
+
+			.board-grid {
+				grid-template-columns: repeat(2, 1fr);
+				gap: 12px;
+			}
+
+			.board-card {
+				padding: 16px;
+			}
+
+			.board-columns {
+				display: grid;
+				grid-template-columns: repeat(2, 1fr);
+				gap: 12px;
+				overflow: visible;
+				padding-bottom: 0;
+			}
+
+			.column {
+				min-width: 0;
+				max-width: none;
+			}
+
+			.dash-header h1 {
+				font-size: 1.15rem;
+			}
+
+			.board-top h2 {
+				font-size: 1.05rem;
+			}
+
+			.modal {
+				max-width: 90vw;
+				padding: 20px;
+			}
+
+			.settings-form {
+				max-width: 100%;
+			}
+
+			.profile-card {
+				padding: 24px;
+			}
+
+			.page {
+				padding: 16px 0;
+			}
+		}
+
+		/* ≤480px — mobile: single column, stacked nav, full-width modals */
+		@media (max-width: 480px) {
+			#app {
+				padding: 0 8px;
+			}
+
+			nav {
+				flex-direction: column;
+				align-items: stretch;
+				gap: 1px;
+			}
+
+			.nav-brand {
+				font-size: 1.1rem;
+				padding: 6px 0;
+			}
+
+			.nav-tab {
+				flex: none;
+				text-align: left;
+				padding: 12px 12px;
+				font-size: 0.85rem;
+				min-height: 44px;
+			}
+
+			.nav-tab.active::after {
+				left: 12px;
+				right: 12px;
+			}
+
+			.board-grid {
+				grid-template-columns: 1fr;
+				gap: 10px;
+			}
+
+			.board-card {
+				padding: 14px;
+			}
+
+			.board-columns {
+				grid-template-columns: 1fr;
+			}
+
+			.dash-header {
+				flex-direction: column;
+				align-items: stretch;
+				gap: 10px;
+			}
+
+			.dash-header h1 {
+				font-size: 1rem;
+			}
+
+			.dash-header .btn {
+				width: 100%;
+			}
+
+			.board-top {
+				flex-direction: column;
+				align-items: stretch;
+				gap: 10px;
+			}
+
+			.board-top h2 {
+				font-size: 0.95rem;
+			}
+
+			.board-top .btn {
+				width: 100%;
+				margin-left: 0;
+			}
+
+			.avatar-stack {
+				justify-content: center;
+			}
+
+			.page {
+				padding: 12px 0;
+			}
+
+			.login-card {
+				padding: 24px 16px;
+			}
+
+			.login-logo {
+				font-size: 1.5rem;
+			}
+
+			.login-sub {
+				font-size: 0.8rem;
+				margin-bottom: 20px;
+			}
+
+			.modal {
+				max-width: 100vw;
+				max-height: 100vh;
+				border-radius: 0;
+				padding: 20px 16px;
+			}
+
+			.modal-overlay {
+				padding: 0;
+				align-items: flex-end;
+			}
+
+			.modal h2 {
+				font-size: 1rem;
+			}
+
+			.modal p {
+				font-size: 0.8rem;
+			}
+
+			.btn {
+				padding: 12px 20px;
+				font-size: 0.85rem;
+				min-height: 44px;
+			}
+
+			.btn-sm {
+				padding: 10px 14px;
+				font-size: 0.8rem;
+				min-height: 44px;
+			}
+
+			.input {
+				padding: 14px 12px;
+				font-size: 0.85rem;
+			}
+
+			label {
+				font-size: 0.75rem;
+			}
+
+			.settings-form .glass {
+				padding: 14px;
+			}
+
+			.settings-row {
+				flex-wrap: wrap;
+				gap: 8px;
+			}
+
+			.settings-row span {
+				font-size: 0.8rem;
+			}
+
+			.profile-card {
+				padding: 20px;
+			}
+
+			.profile-avatar {
+				width: 60px;
+				height: 60px;
+				font-size: 1.4rem;
+			}
+
+			.task-card {
+				padding: 12px;
+			}
+
+			.column {
+				padding: 10px;
+			}
+
+			.column-header h3 {
+				font-size: 0.85rem;
+			}
+
+			.task-card h4 {
+				font-size: 0.8rem;
+			}
+
+			.column-cards {
+				gap: 8px;
+			}
+		}
+
+		/* ── Misc ── */
+		.flex-1 {
+			flex: 1;
+		}
+
+		.mt-8 {
+			margin-top: 8px;
+		}
+
+		.mb-8 {
+			margin-bottom: 8px;
+		}
+
+		.gap-8 {
+			gap: 8px;
+		}
+
+		.text-muted {
+			color: var(--text-muted);
+		}
+
+		/* ── Loading spinner ── */
+		.loading-overlay {
+			display: none;
+			position: fixed;
+			inset: 0;
+			background: rgba(0, 0, 0, 0.35);
+			backdrop-filter: blur(4px);
+			-webkit-backdrop-filter: blur(4px);
+			z-index: 300;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.loading-overlay.show {
+			display: flex;
+		}
+
+		.spinner {
+			width: 42px;
+			height: 42px;
+			border: 3px solid var(--glass-border);
+			border-top-color: var(--accent);
+			border-radius: 50%;
+			animation: spin 0.7s linear infinite;
+		}
+
+		@keyframes spin {
+			to {
+				transform: rotate(360deg);
+			}
+		}
+
+		/* ── Toast notification ── */
+		.toast {
+			position: fixed;
+			bottom: 24px;
+			left: 50%;
+			transform: translateX(-50%);
+			background: var(--glass-bg);
+			backdrop-filter: blur(20px);
+			-webkit-backdrop-filter: blur(20px);
+			border: 1px solid var(--glass-border);
+			border-radius: var(--radius-sm);
+			padding: 12px 24px;
+			font-size: 0.85rem;
+			color: var(--text-primary);
+			box-shadow: var(--shadow);
+			z-index: 400;
+			opacity: 0;
+			transition: opacity 0.3s ease, transform 0.3s ease;
+			transform: translateX(-50%) translateY(10px);
+			pointer-events: none;
+		}
+
+		.toast.show {
+			opacity: 1;
+			transform: translateX(-50%) translateY(0);
+		}
+
+		/* ── Empty state ── */
+		.empty-state {
+			text-align: center;
+			padding: 40px 20px;
+			color: var(--text-muted);
+			font-size: 0.9rem;
+		}
+
+		.btn-danger {
+			color: #ef4444;
+		}
+
+		.btn-danger:hover {
+			border-color: rgba(239, 68, 68, 0.4);
+			box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+		}
+
+		.modal .comment-input-wrap {
+			display: flex;
+			gap: 8px;
+			margin-top: 12px;
+		}
+
+		.modal .comment-input-wrap .input {
+			margin-top: 0;
+		}
+
+		.login-error {
+			color: #ef4444;
+			font-size: 0.8rem;
+			margin-bottom: 10px;
+			display: none;
+		}
+
+		.login-error.show {
+			display: block;
+		}
+
+		.settings-form .btn {
+			margin-top: 6px;
+		}
+	
+	</style>
+<script src="../../demo-api.js"></script>
+</head>
+
+<body>
+	<div class="bg-orb"></div>
+	<div id="app">
+
+		<nav>
+			<div class="nav-brand">ProTask</div>
+			<button class="nav-tab" data-page="login">Connexion</button>
+			<button class="nav-tab active" data-page="dashboard">Tableau de bord</button>
+			<button class="nav-tab" data-page="board">Board</button>
+			<button class="nav-tab" data-page="settings">Parametres</button>
+			<button class="nav-tab" data-page="profile">Profil</button>
+		</nav>
+
+		<div class="page" id="page-login">
+			<div class="login-card glass">
+				<div class="login-logo">ProTask</div>
+				<p class="login-sub">Gerez vos projets en toute simplicite</p>
+				<div class="login-error" id="login-error"></div>
+				<input class="input" type="email" placeholder="Adresse e-mail" id="login-email" value="alex@protask.app">
+				<input class="input" type="password" placeholder="Mot de passe" id="login-pass" value="password">
+				<div class="login-toggle" id="register-fields">
+					<input class="input" type="text" placeholder="Nom complet" id="login-name">
+					<input class="input" type="password" placeholder="Confirmer le mot de passe" id="login-pass-confirm">
+				</div>
+				<button class="btn btn-primary" id="login-btn">Se connecter</button>
+				<span class="login-link" id="toggle-register">Pas de compte ? S'inscrire</span>
+			</div>
+		</div>
+
+		<div class="page" id="page-dashboard">
+			<div class="dash-header">
+				<h1>Mes boards</h1>
+				<button class="btn btn-primary btn-sm" id="btn-new-board">+ Nouveau board</button>
+			</div>
+			<div class="board-grid" id="board-grid"></div>
+		</div>
+
+		<div class="page" id="page-board">
+			<div class="board-top">
+				<h2 id="board-title">Board</h2>
+				<div class="avatar-stack" id="board-members"></div>
+				<button class="btn btn-sm" id="btn-invite" style="margin-left:auto;">+ Inviter</button>
+			</div>
+			<div class="board-columns" id="board-columns"></div>
+		</div>
+
+		<div class="page" id="page-settings">
+			<div class="settings-form" id="settings-content"></div>
+		</div>
+
+		<div class="page" id="page-profile">
+			<div class="profile-card glass">
+				<div class="profile-avatar" id="profile-avatar">?</div>
+				<label>Nom</label>
+				<input class="input" id="profile-name">
+				<label>E-mail</label>
+				<input class="input" type="email" id="profile-email">
+				<span class="profile-link" id="profile-password-link">Modifier le mot de passe</span>
+				<button class="btn btn-primary" id="btn-save-profile">Sauvegarder</button>
+			</div>
+		</div>
+
+		<div class="modal-overlay" id="task-modal">
+			<div class="modal glass">
+				<button class="modal-close" id="modal-close">&times;</button>
+				<h2 id="modal-title"></h2>
+				<div id="modal-labels"></div>
+				<p id="modal-desc"></p>
+				<h5>Commentaires</h5>
+				<div id="modal-comments"></div>
+				<div class="comment-input-wrap">
+					<input class="input flex-1" placeholder="Ajouter un commentaire..." id="modal-comment-input">
+					<button class="btn btn-sm btn-primary" id="btn-add-comment">Envoyer</button>
+				</div>
+			</div>
+		</div>
+
+		<div class="loading-overlay" id="loading-overlay">
+			<div class="spinner"></div>
+		</div>
+
+		<div class="toast" id="toast"></div>
+
+	</div>
+
+	<script>
+		(function () {
+			// ── Helpers ──
+			const delay = () => new Promise(r => setTimeout(r, 50 + Math.random() * 150));
+			const $ = id => document.getElementById(id);
+			const initials = name => name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+
+			function formatDate(dateStr) {
+				return new Date(dateStr).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+			}
+
+			function timeAgo(dateStr) {
+				const diff = Date.now() - new Date(dateStr).getTime();
+				const mins = Math.floor(diff / 60000);
+				if (mins < 1) return "A l'instant";
+				if (mins < 60) return 'Il y a ' + mins + ' min';
+				const hrs = Math.floor(mins / 60);
+				if (hrs < 24) return 'Il y a ' + hrs + ' h';
+				const days = Math.floor(hrs / 24);
+				return 'Il y a ' + days + ' jour' + (days > 1 ? 's' : '');
+			}
+
+			function showToast(msg) {
+				const t = $('toast');
+				t.textContent = msg;
+				t.classList.add('show');
+				setTimeout(() => t.classList.remove('show'), 2500);
+			}
+
+			function showLoading() { $('loading-overlay').classList.add('show'); }
+
+			function hideLoading() { $('loading-overlay').classList.remove('show'); }
+
+			// ── Mock Data Store ──
+			// mockData defined in demo-api.js
+			let nextId = { users: 5, boards: 5, columns: 13, cards: 20, labels: 11, comments: 6, invitations: 1 };
+
+			const getUser = id => mockData.users.find(u => u.id === id);
+			const getLabel = id => mockData.labels.find(l => l.id === id);
+			const colLabels = col => mockData.labels.filter(l => l.boardId === col);
+			const colCards = colId => mockData.cards.filter(c => c.columnId === colId).sort((a, b) => a.order - b.order);
+			const boardCols = bId => mockData.columns.filter(c => c.boardId === bId).sort((a, b) => a.order - b.order);
+			const boardMembers = bId => {
+				const b = mockData.boards.find(x => x.id === bId);
+				return b ? b.memberIds.map(id => getUser(id)).filter(Boolean) : [];
+			};
+
+			// ── App State ──
+			let authToken = null;
+			let currentBoardId = 1;
+			let cardIdForComment = null;
+
+			// ── DOM refs ──
+			const tabs = document.querySelectorAll('.nav-tab');
+			const pages = {
+				login: $('page-login'),
+				dashboard: $('page-dashboard'),
+				board: $('page-board'),
+				settings: $('page-settings'),
+				profile: $('page-profile'),
+			};
+
+			// ── Navigation ──
+			function switchPage(pageId) {
+				if (pageId !== 'login' && !currentUser) {
+					showToast("Veuillez d'abord vous connecter");
+					pageId = 'login';
+				}
+				Object.values(pages).forEach(p => p.classList.remove('active'));
+				tabs.forEach(t => t.classList.remove('active'));
+				if (pages[pageId]) pages[pageId].classList.add('active');
+				const activeTab = document.querySelector('.nav-tab[data-page="' + pageId + '"]');
+				if (activeTab) activeTab.classList.add('active');
+
+				switch (pageId) {
+					case 'dashboard':
+						renderDashboard();
+						break;
+					case 'board':
+						renderBoard();
+						break;
+					case 'settings':
+						renderSettings();
+						break;
+					case 'profile':
+						renderProfile();
+						break;
+				}
+			}
+
+			tabs.forEach(tab => {
+				tab.addEventListener('click', () => switchPage(tab.dataset.page));
+			});
+
+			// ── Mock API ──
+			const api = demoApi;
+// Current user helper
+let currentUser = (typeof getCurrentUser === "function") ? getCurrentUser() : null;
+			// ── Render: Dashboard ──
+			async function renderDashboard() {
+				var grid = $('board-grid');
+				showLoading();
+				try {
+					var boards = await api.getBoards();
+					var colors = ['#00d4ff', '#a855f7', '#f59e0b', '#10b981', '#ef4444'];
+					grid.innerHTML = boards.map(function (b, i) {
+						return '<div class="board-card glass" data-board-id="' + b.id + '" style="border-left-color:' + colors[i % colors.length] + ';">' +
+							'<h3>' + b.title + '</h3>' +
+							'<p>' + (b.description || 'Aucune description') + '</p>' +
+							'<div class="board-meta">' +
+							'<span>👥 ' + b.members.length + '</span>' +
+							'<span>📋 ' + b.cardCount + '</span>' +
+							'</div>' +
+							'</div>';
+					}).join('');
+					grid.querySelectorAll('.board-card').forEach(function (el) {
+						el.addEventListener('click', function () {
+							currentBoardId = parseInt(el.dataset.boardId);
+							switchPage('board');
+						});
+					});
+				} catch (e) {
+					grid.innerHTML = '<div class="empty-state">Erreur : ' + e.message + '</div>';
+				} finally {
+					hideLoading();
+				}
+			}
+
+			$('btn-new-board').addEventListener('click', async function () {
+				var title = prompt('Nom du nouveau board :');
+				if (!title) return;
+				showLoading();
+				try {
+					await api.createBoard({ title: title });
+					showToast('Board cree');
+					await renderDashboard();
+				} catch (e) {
+					showToast('Erreur : ' + e.message);
+				} finally {
+					hideLoading();
+				}
+			});
+
+			// ── Render: Board ──
+			async function renderBoard() {
+				var titleEl = $('board-title');
+				var membersEl = $('board-members');
+				var columnsEl = $('board-columns');
+				showLoading();
+				try {
+					var board = await api.getBoard(currentBoardId);
+					titleEl.textContent = board.title;
+					membersEl.innerHTML = board.members.map(function (m) { return '<div class="avatar" title="' + m.name + '">' + initials(m.name) + '</div>'; }).join('');
+
+					var html = '';
+					for (var ci = 0; ci < board.columns.length; ci++) {
+						var col = board.columns[ci];
+						var cards = await api.getCards(col.id);
+						html += '<div class="column glass">' +
+							'<div class="column-header">' +
+							'<h3>' + col.title + '</h3>' +
+							'<span class="column-count">' + cards.length + '</span>' +
+							'</div>' +
+							'<div class="column-cards" data-column-id="' + col.id + '">' +
+							(cards.length === 0 ? '<div class="empty-state" style="padding:16px;font-size:0.8rem;">Aucune carte</div>' : cards.map(function (c) { return renderTaskCard(c); }).join('')) +
+							'</div>' +
+							'</div>';
+					}
+					columnsEl.innerHTML = html;
+					columnsEl.querySelectorAll('.task-card').forEach(function (el) {
+						el.addEventListener('click', function (e) {
+							e.stopPropagation();
+							openModal(parseInt(this.dataset.cardId));
+						});
+					});
+				} catch (e) {
+					columnsEl.innerHTML = '<div class="empty-state">Erreur : ' + e.message + '</div>';
+				} finally {
+					hideLoading();
+				}
+			}
+
+			function renderTaskCard(c) {
+				var labels = (c.labels || []).map(function (l) {
+					return '<span class="label-pill" style="background:' + l.color + '33;color:' + l.color + ';">' + l.name + '</span>';
+				}).join('');
+				var assignee = c.assignee
+					? '<div class="avatar-sm" title="' + c.assignee.name + '">' + initials(c.assignee.name) + '</div>'
+					: '';
+				var date = c.dueDate ? formatDate(c.dueDate) : '';
+				return '<div class="task-card" data-card-id="' + c.id + '">' +
+					'<h4>' + c.title + '</h4>' +
+					(labels ? '<div class="task-labels">' + labels + '</div>' : '') +
+					'<div class="task-footer">' +
+					'<div class="avatar-stack">' + assignee + '</div>' +
+					(date ? '<span>' + date + '</span>' : '') +
+					'</div>' +
+					'</div>';
+			}
+
+			$('btn-invite').addEventListener('click', async function () {
+				var email = prompt('Adresse e-mail du membre a inviter :');
+				if (!email) return;
+				showLoading();
+				try {
+					await api.inviteMember(currentBoardId, email);
+					showToast('Invitation envoyee a ' + email);
+				} catch (e) {
+					showToast('Erreur : ' + e.message);
+				} finally {
+					hideLoading();
+				}
+			});
+
+			// ── Render: Settings ──
+			async function renderSettings() {
+				var container = $('settings-content');
+				showLoading();
+				try {
+					var board = await api.getBoard(currentBoardId);
+					var labels = await api.getLabels(currentBoardId);
+
+					container.innerHTML =
+						'<div class="glass">' +
+						'<h3>Informations generales</h3>' +
+						'<label>Nom du board</label>' +
+						'<input class="input" id="set-board-name" value="' + board.title.replace(/"/g, '&quot;') + '">' +
+						'<label>Description</label>' +
+						'<textarea class="input" rows="3" id="set-board-desc">' + (board.description || '').replace(/"/g, '&quot;') + '</textarea>' +
+						'</div>' +
+						'<div class="glass">' +
+						'<h3>Colonnes</h3>' +
+						'<div id="set-columns-list">' +
+						board.columns.map(function (c) {
+							return '<div class="settings-row" data-col-id="' + c.id + '">' +
+								'<span>' + c.title + '</span>' +
+								'<button class="btn btn-sm btn-edit-col">Editer</button>' +
+								'<button class="btn btn-sm btn-danger btn-del-col">Supprimer</button>' +
+								'</div>';
+						}).join('') +
+						'</div>' +
+						'<button class="btn btn-sm" id="set-add-col" style="margin-top:12px;">+ Ajouter une colonne</button>' +
+						'</div>' +
+						'<div class="glass">' +
+						'<h3>Labels</h3>' +
+						'<div id="set-labels-list">' +
+						labels.map(function (l) {
+							return '<div class="settings-row" data-label-id="' + l.id + '">' +
+								'<div class="color-picker-wrap">' +
+								'<div class="color-preview" style="background:' + l.color + ';"></div>' +
+								'<span>' + l.name + '</span>' +
+								'</div>' +
+								'<input type="color" value="' + l.color + '" class="label-color-input" style="width:30px;height:30px;border:1px solid var(--glass-border);border-radius:6px;background:transparent;cursor:pointer;padding:2px;">' +
+								'<button class="btn btn-sm btn-danger btn-del-label">Supprimer</button>' +
+								'</div>';
+						}).join('') +
+						'</div>' +
+						'<button class="btn btn-sm" id="set-add-label" style="margin-top:12px;">+ Ajouter un label</button>' +
+						'</div>' +
+						'<button class="btn btn-primary" id="set-save-board">Sauvegarder</button>';
+
+					$('set-save-board').addEventListener('click', async function () {
+						var name = $('set-board-name').value;
+						var desc = $('set-board-desc').value;
+						showLoading();
+						try {
+							await api.updateBoard(currentBoardId, { title: name, description: desc });
+							showToast('Board mis a jour');
+						} catch (e) {
+							showToast('Erreur : ' + e.message);
+						} finally {
+							hideLoading();
+						}
+					});
+
+					$('set-add-col').addEventListener('click', async function () {
+						var title = prompt('Nom de la nouvelle colonne :');
+						if (!title) return;
+						showLoading();
+						try {
+							await api.createColumn(currentBoardId, { title: title });
+							showToast('Colonne creee');
+							await renderSettings();
+						} catch (e) {
+							showToast('Erreur : ' + e.message);
+						} finally {
+							hideLoading();
+						}
+					});
+
+					$('set-add-label').addEventListener('click', async function () {
+						var name = prompt('Nom du nouveau label :');
+						if (!name) return;
+						showLoading();
+						try {
+							await api.createLabel(currentBoardId, { name: name, color: '#00d4ff' });
+							showToast('Label cree');
+							await renderSettings();
+						} catch (e) {
+							showToast('Erreur : ' + e.message);
+						} finally {
+							hideLoading();
+						}
+					});
+
+					document.querySelectorAll('.btn-edit-col').forEach(function (btn) {
+						btn.addEventListener('click', async function () {
+							var row = this.closest('.settings-row');
+							var colId = parseInt(row.dataset.colId);
+							var current = row.querySelector('span').textContent;
+							var title = prompt('Nouveau nom :', current);
+							if (!title || title === current) return;
+							showLoading();
+							try {
+								await api.updateColumn(colId, { title: title });
+								showToast('Colonne renommee');
+								await renderSettings();
+							} catch (e) {
+								showToast('Erreur : ' + e.message);
+							} finally {
+								hideLoading();
+							}
+						});
+					});
+
+					document.querySelectorAll('.btn-del-col').forEach(function (btn) {
+						btn.addEventListener('click', async function () {
+							if (!confirm('Supprimer cette colonne et toutes ses cartes ?')) return;
+							var colId = parseInt(this.closest('.settings-row').dataset.colId);
+							showLoading();
+							try {
+								await api.deleteColumn(colId);
+								showToast('Colonne supprimee');
+								await renderSettings();
+							} catch (e) {
+								showToast('Erreur : ' + e.message);
+							} finally {
+								hideLoading();
+							}
+						});
+					});
+
+					document.querySelectorAll('.label-color-input').forEach(function (inp) {
+						inp.addEventListener('change', async function () {
+							var labelId = parseInt(this.closest('.settings-row').dataset.labelId);
+							var color = this.value;
+							showLoading();
+							try {
+								await api.updateLabel(labelId, { color: color });
+								this.closest('.settings-row').querySelector('.color-preview').style.background = color;
+								showToast('Couleur mise a jour');
+							} catch (e) {
+								showToast('Erreur : ' + e.message);
+							} finally {
+								hideLoading();
+							}
+						});
+					});
+
+					document.querySelectorAll('.btn-del-label').forEach(function (btn) {
+						btn.addEventListener('click', async function () {
+							if (!confirm('Supprimer ce label ?')) return;
+							var labelId = parseInt(this.closest('.settings-row').dataset.labelId);
+							showLoading();
+							try {
+								await api.deleteLabel(labelId);
+								showToast('Label supprime');
+								await renderSettings();
+							} catch (e) {
+								showToast('Erreur : ' + e.message);
+							} finally {
+								hideLoading();
+							}
+						});
+					});
+				} catch (e) {
+					container.innerHTML = '<div class="empty-state">Erreur : ' + e.message + '</div>';
+				} finally {
+					hideLoading();
+				}
+			}
+
+			// ── Render: Profile ──
+			async function renderProfile() {
+				showLoading();
+				try {
+					var user = await api.getMe();
+					$('profile-avatar').textContent = initials(user.name);
+					$('profile-name').value = user.name;
+					$('profile-email').value = user.email;
+				} catch (e) {
+					showToast('Erreur : ' + e.message);
+				} finally {
+					hideLoading();
+				}
+			}
+
+			$('btn-save-profile').addEventListener('click', async function () {
+				var name = $('profile-name').value;
+				var email = $('profile-email').value;
+				showLoading();
+				try {
+					await api.updateMe({ name: name, email: email });
+					showToast('Profil mis a jour');
+					$('profile-avatar').textContent = initials(name);
+				} catch (e) {
+					showToast('Erreur : ' + e.message);
+				} finally {
+					hideLoading();
+				}
+			});
+
+			// ── Modal ──
+			var modal = $('task-modal');
+			var modalClose = $('modal-close');
+
+			async function openModal(cardId) {
+				showLoading();
+				try {
+					var card = await api.getCard(cardId);
+					var comments = await api.getComments(cardId);
+					cardIdForComment = cardId;
+
+					$('modal-title').textContent = card.title;
+					var labelHtml = (card.labels || []).map(function (l) {
+						return '<span class="label-pill" style="background:' + l.color + '33;color:' + l.color + ';margin-right:6px;">' + l.name + '</span>';
+					}).join('');
+					$('modal-labels').innerHTML = labelHtml;
+					$('modal-desc').textContent = card.description || 'Aucune description';
+
+					var commentsHtml = comments.map(function (cm) {
+						return '<div class="comment">' +
+							'<div class="avatar-sm">' + initials(cm.author ? cm.author.name : '?') + '</div>' +
+							'<div class="comment-body">' +
+							'<strong>' + (cm.author ? cm.author.name : 'Inconnu') + '</strong>' +
+							'<span>' + cm.text + '</span>' +
+							'<small>' + timeAgo(cm.createdAt) + '</small>' +
+							'</div>' +
+							'</div>';
+					}).join('');
+					$('modal-comments').innerHTML = comments.length > 0
+						? commentsHtml
+						: '<div class="empty-state" style="padding:12px;font-size:0.8rem;">Aucun commentaire</div>';
+
+					$('modal-comment-input').value = '';
+					modal.classList.add('show');
+				} catch (e) {
+					showToast('Erreur : ' + e.message);
+				} finally {
+					hideLoading();
+				}
+			}
+
+			modalClose.addEventListener('click', function () { modal.classList.remove('show'); });
+			modal.addEventListener('click', function (e) {
+				if (e.target === this) modal.classList.remove('show');
+			});
+
+			$('btn-add-comment').addEventListener('click', async function () {
+				var input = $('modal-comment-input');
+				var text = input.value.trim();
+				if (!text || !cardIdForComment) { return; }
+				showLoading();
+				try {
+					await api.addComment(cardIdForComment, { text: text });
+					input.value = '';
+					showToast('Commentaire ajoute');
+					var comments = await api.getComments(cardIdForComment);
+					var html = comments.map(function (cm) {
+						return '<div class="comment">' +
+							'<div class="avatar-sm">' + initials(cm.author ? cm.author.name : '?') + '</div>' +
+							'<div class="comment-body">' +
+							'<strong>' + (cm.author ? cm.author.name : 'Inconnu') + '</strong>' +
+							'<span>' + cm.text + '</span>' +
+							'<small>' + timeAgo(cm.createdAt) + '</small>' +
+							'</div>' +
+							'</div>';
+					}).join('');
+					$('modal-comments').innerHTML = html;
+				} catch (e) {
+					showToast('Erreur : ' + e.message);
+				} finally {
+					hideLoading();
+				}
+			});
+
+			// ── Login ──
+			var isRegister = false;
+			var toggleReg = $('toggle-register');
+			var regFields = $('register-fields');
+			var loginBtn = $('login-btn');
+
+			toggleReg.addEventListener('click', function () {
+				isRegister = !isRegister;
+				regFields.classList.toggle('show', isRegister);
+				toggleReg.textContent = isRegister ? "Deja un compte ? Se connecter" : "Pas de compte ? S'inscrire";
+				loginBtn.textContent = isRegister ? "S'inscrire" : 'Se connecter';
+			});
+
+			loginBtn.addEventListener('click', async function () {
+				var email = $('login-email').value.trim();
+				var pass = $('login-pass').value;
+				var errEl = $('login-error');
+				errEl.classList.remove('show');
+
+				if (!email || !pass) {
+					errEl.textContent = 'Veuillez remplir tous les champs';
+					errEl.classList.add('show');
+					return;
+				}
+
+				showLoading();
+				try {
+					if (isRegister) {
+						var name = $('login-name').value.trim();
+						var confirm = $('login-pass-confirm').value;
+						if (!name) { errEl.textContent = 'Veuillez entrer un nom'; errEl.classList.add('show'); hideLoading(); return; }
+						if (pass !== confirm) { errEl.textContent = 'Les mots de passe ne correspondent pas'; errEl.classList.add('show'); hideLoading(); return; }
+						await api.register({ name: name, email: email, password: pass });
+						showToast('Compte cree !');
+					} else {
+						await api.login({ email: email, password: pass });
+						showToast('Connecte !');
+					}
+					switchPage('dashboard');
+				} catch (e) {
+					errEl.textContent = e.message;
+					errEl.classList.add('show');
+				} finally {
+					hideLoading();
+				}
+			});
+
+			// ── Init: auto-login on load ──
+			(function init() {
+				showLoading();
+				api.login({ email: 'alex@protask.app', password: 'password' }).then(function (r) {
+					currentUser = r.user;
+					authToken = r.token;
+					hideLoading();
+					switchPage('dashboard');
+				}).catch(function () {
+					hideLoading();
+				});
+			})();
+
+		})();
+	</script>
+</body>
+</html>

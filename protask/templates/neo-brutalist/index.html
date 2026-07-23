@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProTask - Kanban</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, 'Arial Black', 'Impact', sans-serif;
+    background: #fff;
+    color: #000;
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  a { color: #000; text-decoration: underline; cursor: pointer; }
+  a:hover { background: #FFD700; }
+
+  .nav {
+    display: flex;
+    border-bottom: 4px solid #000;
+    background: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .nav-btn {
+    padding: 16px 28px;
+    font-weight: 900;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    cursor: pointer;
+    border: none;
+    background: #fff;
+    color: #000;
+    border-right: 3px solid #000;
+    transition: none;
+    font-family: inherit;
+  }
+  .nav-btn:hover { background: #FFD700; }
+  .nav-btn.active { background: #000; color: #fff; }
+  .nav-logo {
+    padding: 14px 28px;
+    font-weight: 900;
+    font-size: 20px;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+    background: #FF3366;
+    color: #fff;
+    border-right: 3px solid #000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .nav-fill { flex: 1; border-right: 3px solid #000; }
+  .nav-btn.logout { background: #FF3366; color: #fff; }
+
+  .page { display: none; padding: 40px 48px; max-width: 1400px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  .brut-card {
+    background: #fff;
+    border: 4px solid #000;
+    box-shadow: 8px 8px 0 #000;
+    padding: 24px;
+  }
+  .brut-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    font-weight: 900;
+    font-size: 13px;
+    text-transform: uppercase;
+    border: 4px solid #000;
+    box-shadow: 5px 5px 0 #000;
+    cursor: pointer;
+    background: #fff;
+    color: #000;
+    font-family: inherit;
+    letter-spacing: .5px;
+    transition: none;
+  }
+  .brut-btn:hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 #000; }
+  .brut-btn:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0 #000; }
+  .brut-btn.primary { background: #FF3366; color: #fff; }
+  .brut-btn.gold { background: #FFD700; color: #000; }
+  .brut-btn.cyan { background: #00E5FF; color: #000; }
+  .brut-btn.sm { padding: 8px 16px; font-size: 11px; box-shadow: 4px 4px 0 #000; }
+  .brut-btn:disabled { opacity: .5; pointer-events: none; }
+  .brut-btn.green { background: #22c55e; color: #fff; }
+
+  .brut-input {
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 14px;
+    font-family: inherit;
+    font-weight: 700;
+    border: 4px solid #000;
+    background: #fff;
+    color: #000;
+    outline: none;
+    transition: none;
+  }
+  .brut-input:focus { background: #FFD700; }
+
+  .hr-thick {
+    border: none;
+    border-top: 4px solid #000;
+    margin: 24px 0;
+  }
+
+  .page.page-login.active {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 68px);
+    padding: 40px 48px;
+  }
+  .page-login .brut-card {
+    width: 440px;
+    padding: 48px 40px;
+  }
+  .login-logo {
+    font-size: 48px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -3px;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .login-logo span { background: #FF3366; color: #fff; padding: 0 8px; }
+  .login-sub {
+    text-align: center;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 32px;
+    opacity: .6;
+  }
+  .login-field { margin-bottom: 20px; }
+  .login-field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .login-toggle {
+    text-align: center;
+    margin-top: 24px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .login-toggle a { font-weight: 900; }
+  .register-fields { display: none; margin-top: 4px; }
+  .register-fields.show { display: block; }
+  .login-error {
+    background: #fef2f2;
+    border: 3px solid #dc2626;
+    color: #dc2626;
+    padding: 10px 14px;
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: none;
+  }
+  .login-error.show { display: block; }
+
+  .dash-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+  }
+  .dash-header h1 {
+    font-size: 32px;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+  }
+  .board-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 32px;
+  }
+  .board-card {
+    border: 4px solid #000;
+    box-shadow: 8px 8px 0 #000;
+    padding: 0;
+    cursor: pointer;
+    transition: none;
+    background: #fff;
+  }
+  .board-card:hover { transform: translate(-3px, -3px); box-shadow: 11px 11px 0 #000; }
+  .board-card-color { height: 10px; }
+  .board-card-body { padding: 24px 20px 20px; }
+  .board-card-title {
+    font-size: 18px;
+    font-weight: 900;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .board-card-meta {
+    display: flex;
+    gap: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .board-card-meta span { display: flex; align-items: center; gap: 6px; }
+
+  .empty-state {
+    border: 4px dashed #ccc;
+    padding: 48px;
+    text-align: center;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 16px;
+    color: #999;
+    grid-column: 1 / -1;
+  }
+
+  .board-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .board-top-left { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .board-top-left h2 {
+    font-size: 28px;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+  }
+  .board-avatars { display: flex; }
+  .board-avatar {
+    width: 36px; height: 36px;
+    border: 3px solid #000;
+    margin-right: -10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    background: #00E5FF;
+  }
+  .board-avatar:nth-child(2) { background: #FFD700; }
+  .board-avatar:nth-child(3) { background: #FF3366; color: #fff; }
+  .board-avatar:last-child { margin-right: 0; }
+
+  .board-cols {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    align-items: start;
+  }
+  .board-col {
+    border: 4px solid #000;
+    box-shadow: 8px 8px 0 #000;
+    background: #fff;
+  }
+  .board-col-header {
+    padding: 16px 20px;
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: 14px;
+    letter-spacing: .5px;
+    border-bottom: 4px solid #000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f5f5f5;
+  }
+  .board-col-header .count {
+    background: #000;
+    color: #fff;
+    padding: 2px 10px;
+    font-size: 12px;
+  }
+  .board-col-body { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+
+  .task-card {
+    border: 3px solid #000;
+    box-shadow: 5px 5px 0 #000;
+    padding: 16px;
+    background: #fff;
+    cursor: pointer;
+    transition: none;
+  }
+  .task-card:hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 #000; }
+  .task-labels { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .task-label {
+    padding: 2px 10px;
+    font-size: 9px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    border: 2px solid #000;
+  }
+  .task-label.urgent { background: #FF3366; color: #fff; }
+  .task-label.design { background: #00E5FF; }
+  .task-label.dev { background: #FFD700; }
+  .task-label.copy { background: #ccc; }
+  .task-title {
+    font-size: 14px;
+    font-weight: 900;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    line-height: 1.3;
+  }
+  .task-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .task-assignee {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .task-assignee .mini-avatar {
+    width: 24px; height: 24px;
+    border: 2px solid #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 900;
+    background: #FFD700;
+  }
+  .task-date {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.6);
+    z-index: 200;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    width: 640px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: #fff;
+    border: 4px solid #000;
+    box-shadow: 12px 12px 0 #000;
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 4px solid #000;
+    background: #000;
+    color: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  .modal-header h3 { font-size: 18px; text-transform: uppercase; letter-spacing: -0.5px; }
+  .modal-close {
+    width: 36px; height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #fff;
+    background: #FF3366;
+    color: #fff;
+    font-weight: 900;
+    font-size: 18px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .modal-body { padding: 24px; }
+  .modal-body h4 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .modal-desc {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 24px;
+    line-height: 1.6;
+    text-transform: none;
+    font-weight: 700;
+  }
+  .modal-meta-row {
+    display: flex;
+    gap: 40px;
+    margin-bottom: 28px;
+  }
+  .modal-meta-row .label { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; }
+  .modal-meta-row .value { font-size: 13px; font-weight: 700; margin-top: 4px; }
+  .modal-comments { margin-bottom: 24px; }
+  .modal-comment {
+    border-left: 4px solid #000;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+  }
+  .modal-comment-author { font-size: 11px; font-weight: 900; text-transform: uppercase; }
+  .modal-comment-text { font-size: 13px; margin-top: 4px; font-weight: 500; }
+  .modal-add-comment { display: flex; gap: 12px; }
+  .modal-add-comment .brut-input { flex: 1; padding: 10px 14px; font-size: 13px; }
+  .modal-add-comment .brut-btn { padding: 10px 20px; }
+
+  .settings-wrap { max-width: 680px; }
+  .settings-wrap h2 {
+    font-size: 28px;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+    margin-bottom: 32px;
+  }
+  .settings-group { margin-bottom: 32px; }
+  .settings-group label {
+    display: block;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .settings-group .brut-input { margin-bottom: 16px; }
+  .settings-group textarea.brut-input { resize: vertical; min-height: 80px; font-family: inherit; }
+
+  .settings-columns { margin-bottom: 24px; }
+  .settings-columns h3 {
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 12px;
+  }
+  .settings-col-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 3px solid #000;
+    padding: 10px 16px;
+    margin-bottom: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 13px;
+  }
+  .settings-col-item .col-actions { display: flex; gap: 8px; }
+  .settings-col-item .col-actions button {
+    width: 30px; height: 30px;
+    border: 3px solid #000;
+    background: #fff;
+    font-weight: 900;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .settings-col-item .col-actions button.del { background: #FF3366; color: #fff; }
+
+  .settings-labels { margin-bottom: 28px; }
+  .settings-labels h3 {
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 12px;
+  }
+  .settings-label-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .settings-label-item .color-swatch {
+    width: 32px; height: 32px;
+    border: 3px solid #000;
+  }
+  .settings-label-item span { font-weight: 700; text-transform: uppercase; font-size: 12px; }
+
+  .profile-wrap { max-width: 560px; }
+  .profile-header {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+  }
+  .profile-avatar {
+    width: 120px; height: 120px;
+    border: 4px solid #000;
+    box-shadow: 8px 8px 0 #FFD700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    font-weight: 900;
+    text-transform: uppercase;
+    background: #00E5FF;
+    flex-shrink: 0;
+  }
+  .profile-info h2 {
+    font-size: 28px;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+  }
+  .profile-info .email {
+    font-size: 14px;
+    font-weight: 700;
+    margin-top: 4px;
+    opacity: .6;
+  }
+  .profile-form label {
+    display: block;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .profile-form .brut-input { margin-bottom: 20px; }
+  .profile-pw-section {
+    border: 4px solid #000;
+    box-shadow: 6px 6px 0 #000;
+    padding: 24px;
+    margin-bottom: 28px;
+  }
+  .profile-pw-section h3 {
+    font-size: 14px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    padding: 16px 24px;
+    border: 4px solid #000;
+    box-shadow: 6px 6px 0 #000;
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: 13px;
+    z-index: 300;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all .3s ease;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { background: #22c55e; color: #fff; }
+  .toast.error { background: #FF3366; color: #fff; }
+
+  @media (min-width: 1440px) {
+    .page { padding: 40px 48px; max-width: 1400px; }
+    .board-cols { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 1024px) {
+    .page { padding: 28px 32px; }
+    .nav-btn { padding: 14px 20px; font-size: 12px; }
+    .nav-logo { padding: 12px 20px; font-size: 18px; }
+    .dash-header h1 { font-size: 26px; }
+    .board-top-left h2 { font-size: 24px; }
+    .dash-header { margin-bottom: 28px; }
+    .board-top { margin-bottom: 24px; }
+    .brut-card { padding: 20px; }
+    .board-grid { gap: 24px; }
+    .board-cols { gap: 20px; }
+  }
+  @media (max-width: 768px) {
+    .board-cols { grid-template-columns: repeat(2, 1fr); }
+    .board-grid { grid-template-columns: repeat(2, 1fr); }
+    .page { padding: 20px 24px; }
+    .dash-header h1 { font-size: 22px; }
+    .board-top-left h2 { font-size: 20px; }
+    .brut-card { box-shadow: 6px 6px 0 #000; }
+    .board-col { box-shadow: 6px 6px 0 #000; }
+    .board-card { box-shadow: 6px 6px 0 #000; }
+    .modal { width: 90vw; }
+    .page.page-login.active { padding: 20px 24px; }
+    .page-login .brut-card { width: 100%; max-width: 440px; padding: 36px 28px; }
+    .login-logo { font-size: 40px; }
+    .board-grid { gap: 20px; }
+    .board-cols { gap: 16px; }
+    .settings-wrap, .profile-wrap { max-width: 100%; }
+    .board-card-body { padding: 18px 16px 16px; }
+  }
+  @media (max-width: 600px) {
+    .nav { flex-wrap: wrap; border-bottom-width: 3px; }
+    .nav-btn { flex: 1 1 auto; padding: 12px 10px; font-size: 10px; border-right-width: 2px; min-height: 44px; }
+    .nav-logo { padding: 10px 14px; font-size: 14px; border-right-width: 2px; min-height: 44px; }
+    .nav-fill { display: none; }
+    .page { padding: 16px; }
+    .board-cols { grid-template-columns: 1fr; gap: 16px; }
+    .board-grid { grid-template-columns: 1fr; gap: 16px; }
+    .dash-header { flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom: 20px; }
+    .dash-header h1 { font-size: 18px; }
+    .board-top { flex-direction: column; align-items: flex-start; }
+    .board-top-left { gap: 12px; }
+    .board-top-left h2 { font-size: 16px; }
+    .board-avatars { margin-top: 4px; }
+    .brut-card { padding: 14px; border-width: 3px; box-shadow: 4px 4px 0 #000; }
+    .board-col { border-width: 3px; box-shadow: 4px 4px 0 #000; }
+    .board-col-header { padding: 12px 14px; font-size: 11px; border-bottom-width: 3px; }
+    .board-col-header .count { font-size: 10px; padding: 1px 8px; }
+    .board-col-body { padding: 10px; gap: 10px; }
+    .task-card { padding: 12px; border-width: 2px; box-shadow: 3px 3px 0 #000; }
+    .task-card:hover { transform: none; box-shadow: 3px 3px 0 #000; }
+    .task-title { font-size: 12px; margin-bottom: 8px; }
+    .task-footer { font-size: 10px; flex-wrap: wrap; gap: 6px; }
+    .board-card { border-width: 3px; box-shadow: 4px 4px 0 #000; }
+    .board-card:hover { transform: none; box-shadow: 4px 4px 0 #000; }
+    .board-card-body { padding: 14px 12px 12px; }
+    .board-card-title { font-size: 14px; margin-bottom: 10px; }
+    .board-card-meta { font-size: 10px; gap: 12px; }
+    .brut-btn { padding: 10px 16px; font-size: 11px; box-shadow: 4px 4px 0 #000; min-height: 44px; }
+    .brut-btn:hover { transform: none; box-shadow: 4px 4px 0 #000; }
+    .brut-btn.sm { padding: 8px 12px; font-size: 10px; min-height: 44px; }
+    .modal-overlay { padding: 8px; }
+    .modal { width: 100%; border-width: 3px; box-shadow: 5px 5px 0 #000; }
+    .modal-header { padding: 12px 14px; }
+    .modal-header h3 { font-size: 13px; }
+    .modal-body { padding: 14px; }
+    .modal-close { width: 32px; height: 32px; font-size: 14px; border-width: 2px; min-height: 44px; min-width: 44px; }
+    .modal-meta-row { flex-direction: column; gap: 12px; margin-bottom: 20px; }
+    .modal-comment { padding: 10px 12px; }
+    .modal-add-comment { flex-direction: column; gap: 8px; }
+    .modal-add-comment .brut-input { width: 100%; }
+    .modal-desc { font-size: 13px; }
+    .hr-thick { margin: 14px 0; border-top-width: 3px; }
+    .page.page-login.active { padding: 16px; min-height: calc(100vh - 56px); }
+    .page-login .brut-card { padding: 24px 16px; }
+    .login-logo { font-size: 28px; letter-spacing: -2px; }
+    .login-logo span { padding: 0 4px; }
+    .login-sub { font-size: 9px; margin-bottom: 24px; }
+    .login-field { margin-bottom: 14px; }
+    .login-field label { font-size: 10px; }
+    .login-toggle { font-size: 12px; margin-top: 18px; }
+    .settings-wrap h2 { font-size: 20px; margin-bottom: 20px; }
+    .settings-group { margin-bottom: 20px; }
+    .settings-group .brut-input { margin-bottom: 12px; }
+    .settings-columns h3, .settings-labels h3 { font-size: 12px; }
+    .settings-col-item { padding: 8px 12px; font-size: 11px; }
+    .settings-col-item .col-actions button { width: 28px; height: 28px; font-size: 12px; min-height: 44px; min-width: 44px; }
+    .profile-header { gap: 16px; margin-bottom: 24px; }
+    .profile-avatar { width: 72px; height: 72px; font-size: 28px; box-shadow: 5px 5px 0 #FFD700; border-width: 3px; }
+    .profile-info h2 { font-size: 18px; }
+    .profile-info .email { font-size: 12px; }
+    .profile-form .brut-input { margin-bottom: 14px; }
+    .profile-pw-section { padding: 14px; box-shadow: 4px 4px 0 #000; border-width: 3px; margin-bottom: 20px; }
+    .profile-pw-section h3 { font-size: 12px; margin-bottom: 12px; }
+    .board-avatar { width: 28px; height: 28px; font-size: 9px; border-width: 2px; margin-right: -8px; }
+    .task-label { font-size: 8px; padding: 1px 8px; border-width: 1.5px; }
+    .brut-input { padding: 12px 14px; font-size: 13px; border-width: 3px; }
+    body { font-size: 12px; }
+    .board-top { margin-bottom: 16px; }
+    .board-card-color { height: 8px; }
+    .settings-label-item span { font-size: 11px; }
+  }
+</style>
+<script src="../../demo-api.js"></script>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">&#9632; PT</div>
+  <button class="nav-btn active" data-tab="login" id="nav-login">Connexion</button>
+  <button class="nav-btn" data-tab="dashboard" id="nav-dashboard" style="display:none;">Dashboard</button>
+  <button class="nav-btn" data-tab="board" id="nav-board" style="display:none;">Board</button>
+  <button class="nav-btn" data-tab="settings" id="nav-settings" style="display:none;">Paramètres</button>
+  <button class="nav-btn" data-tab="profile" id="nav-profile" style="display:none;">Profil</button>
+  <div class="nav-fill"></div>
+  <button class="nav-btn logout" id="nav-logout" style="display:none;">Déconnexion</button>
+</nav>
+
+<div class="page active" id="page-login">
+  <div class="brut-card">
+    <div class="login-logo"><span>ProTask</span></div>
+    <div class="login-sub">Kanban &#183; Productivité &#183; &#8734;</div>
+    <div class="login-error" id="login-error"></div>
+    <form id="login-form" onsubmit="return false;">
+      <div class="login-field register-fields" id="reg-name-field">
+        <label for="reg-name">Nom complet</label>
+        <input class="brut-input" type="text" id="reg-name" placeholder="Jean Dupont">
+      </div>
+      <div class="login-field">
+        <label for="login-email">Email</label>
+        <input class="brut-input" type="email" id="login-email" placeholder="vous@exemple.com">
+      </div>
+      <div class="login-field register-fields" id="reg-confirm-field">
+        <label for="reg-confirm">Confirmer le mot de passe</label>
+        <input class="brut-input" type="password" id="reg-confirm" placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;">
+      </div>
+      <div class="login-field">
+        <label for="login-password">Mot de passe</label>
+        <input class="brut-input" type="password" id="login-password" placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;">
+      </div>
+      <button class="brut-btn primary" style="width:100%;justify-content:center;margin-top:8px;" id="login-submit-btn">SE CONNECTER</button>
+    </form>
+    <div class="login-toggle">
+      <span id="login-toggle-text">Pas de compte ? <a id="login-toggle-link">S'inscrire</a></span>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-dashboard">
+  <div class="dash-header">
+    <h1>Mes Boards</h1>
+    <button class="brut-btn gold" id="dash-new-board-btn">+ Nouveau</button>
+  </div>
+  <hr class="hr-thick">
+  <div class="board-grid" id="dash-grid"></div>
+</div>
+
+<div class="page" id="page-board">
+  <div class="board-top">
+    <div class="board-top-left">
+      <h2 id="board-title">--</h2>
+      <div class="board-avatars" id="board-avatars"></div>
+    </div>
+    <button class="brut-btn cyan" id="board-invite-btn">+ Inviter</button>
+  </div>
+  <div class="board-cols" id="board-cols"></div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">--</h3>
+      <button class="modal-close" onclick="closeModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <h4>Description</h4>
+      <p class="modal-desc" id="modal-desc"></p>
+      <div class="modal-meta-row">
+        <div>
+          <div class="label">Assigné à</div>
+          <div class="value" id="modal-assignee">--</div>
+        </div>
+        <div>
+          <div class="label">Échéance</div>
+          <div class="value" id="modal-due">--</div>
+        </div>
+        <div>
+          <div class="label">Labels</div>
+          <div class="value" id="modal-labels">--</div>
+        </div>
+      </div>
+      <hr class="hr-thick">
+      <h4>Commentaires</h4>
+      <div class="modal-comments" id="modal-comments"></div>
+      <div class="modal-add-comment">
+        <input class="brut-input" type="text" id="modal-comment-input" placeholder="Ajouter un commentaire..." aria-label="Nouveau commentaire">
+        <button class="brut-btn sm primary" id="modal-comment-btn">Envoyer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-settings">
+  <div class="settings-wrap">
+    <h2>Paramètres du Board</h2>
+    <hr class="hr-thick">
+    <div class="settings-group">
+      <label for="settings-board-name">Nom du board</label>
+      <input class="brut-input" type="text" id="settings-board-name">
+    </div>
+    <div class="settings-group">
+      <label for="settings-board-desc">Description</label>
+      <textarea class="brut-input" id="settings-board-desc" placeholder="Description du board..."></textarea>
+    </div>
+    <hr class="hr-thick">
+    <div class="settings-columns">
+      <h3>Colonnes</h3>
+      <div id="settings-col-list"></div>
+      <button class="brut-btn sm" id="settings-add-col" style="margin-top:8px;">+ Ajouter une colonne</button>
+    </div>
+    <hr class="hr-thick">
+    <div class="settings-labels">
+      <h3>Labels</h3>
+      <div id="settings-label-list"></div>
+      <button class="brut-btn sm" id="settings-add-label" style="margin-top:8px;">+ Ajouter un label</button>
+    </div>
+    <hr class="hr-thick">
+    <button class="brut-btn primary" id="settings-save-btn" style="width:100%;justify-content:center;">Sauvegarder</button>
+  </div>
+</div>
+
+<div class="page" id="page-profile">
+  <div class="profile-wrap">
+    <div class="profile-header">
+      <div class="profile-avatar" id="profile-avatar">--</div>
+      <div class="profile-info">
+        <h2 id="profile-name-display">--</h2>
+        <div class="email" id="profile-email-display">--</div>
+      </div>
+    </div>
+    <hr class="hr-thick">
+    <div class="profile-form">
+      <label for="profile-name">Nom complet</label>
+      <input class="brut-input" type="text" id="profile-name">
+      <label for="profile-email">Email</label>
+      <input class="brut-input" type="email" id="profile-email">
+      <div class="profile-pw-section">
+        <h3>Modifier le mot de passe</h3>
+        <label for="profile-pw-current">Mot de passe actuel</label>
+        <input class="brut-input" type="password" id="profile-pw-current" placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;">
+        <label for="profile-pw-new">Nouveau mot de passe</label>
+        <input class="brut-input" type="password" id="profile-pw-new" placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;">
+        <label for="profile-pw-confirm">Confirmer le mot de passe</label>
+        <input class="brut-input" type="password" id="profile-pw-confirm" placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;">
+      </div>
+      <button class="brut-btn primary" id="profile-save-btn" style="width:100%;justify-content:center;">Sauvegarder</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+
+let nextId = 100;
+
+let users = [
+  { id: 1, name: 'Jean Dupont', email: 'jean@exemple.com', avatar: null, password: 'password123', createdAt: '2026-01-15T10:00:00Z' },
+  { id: 2, name: 'Marie Curie', email: 'marie@exemple.com', avatar: null, password: 'password123', createdAt: '2026-01-20T10:00:00Z' },
+  { id: 3, name: 'Alex Laurent', email: 'alex@exemple.com', avatar: null, password: 'password123', createdAt: '2026-02-01T10:00:00Z' },
+];
+
+let boards = [
+  { id: 1, title: 'Projet Marketing', ownerId: 1, createdAt: '2026-03-01T09:00:00Z', color: '#FF3366', description: 'Campagne marketing Q3 2026 — gestion des tâches et suivi des livrables.' },
+  { id: 2, title: 'Dev Sprint #42', ownerId: 1, createdAt: '2026-03-05T09:00:00Z', color: '#00E5FF', description: 'Sprint 42 — nouvelles fonctionnalités plateforme.' },
+  { id: 3, title: 'Design Système', ownerId: 2, createdAt: '2026-03-10T09:00:00Z', color: '#FFD700', description: 'Composants design system v2.' },
+  { id: 4, title: 'Site Vitrine', ownerId: 1, createdAt: '2026-03-15T09:00:00Z', color: '#000', description: 'Refonte du site vitrine corporate.' },
+];
+
+let boardMembers = {
+  1: [users[0], users[1], users[2]],
+  2: [users[0], users[1]],
+  3: [users[1], users[2]],
+  4: [users[0], users[1], users[2]],
+};
+
+let columns = [
+  { id: 1, title: 'À FAIRE', order: 0, boardId: 1, createdAt: '2026-03-01T10:00:00Z' },
+  { id: 2, title: 'EN COURS', order: 1, boardId: 1, createdAt: '2026-03-01T10:00:00Z' },
+  { id: 3, title: 'TERMINÉ', order: 2, boardId: 1, createdAt: '2026-03-01T10:00:00Z' },
+  { id: 4, title: 'À FAIRE', order: 0, boardId: 2, createdAt: '2026-03-05T10:00:00Z' },
+  { id: 5, title: 'EN COURS', order: 1, boardId: 2, createdAt: '2026-03-05T10:00:00Z' },
+  { id: 6, title: 'TERMINÉ', order: 2, boardId: 2, createdAt: '2026-03-05T10:00:00Z' },
+  { id: 7, title: 'À FAIRE', order: 0, boardId: 3, createdAt: '2026-03-10T10:00:00Z' },
+  { id: 8, title: 'EN COURS', order: 1, boardId: 3, createdAt: '2026-03-10T10:00:00Z' },
+  { id: 9, title: 'TERMINÉ', order: 2, boardId: 3, createdAt: '2026-03-10T10:00:00Z' },
+  { id: 10, title: 'À FAIRE', order: 0, boardId: 4, createdAt: '2026-03-15T10:00:00Z' },
+  { id: 11, title: 'EN COURS', order: 1, boardId: 4, createdAt: '2026-03-15T10:00:00Z' },
+  { id: 12, title: 'TERMINÉ', order: 2, boardId: 4, createdAt: '2026-03-15T10:00:00Z' },
+];
+
+let labels = [
+  { id: 1, name: 'Urgent', color: '#FF3366', boardId: 1 },
+  { id: 2, name: 'Design', color: '#00E5FF', boardId: 1 },
+  { id: 3, name: 'Dev', color: '#FFD700', boardId: 1 },
+  { id: 4, name: 'Copy', color: '#ccc', boardId: 1 },
+  { id: 5, name: 'Urgent', color: '#FF3366', boardId: 2 },
+  { id: 6, name: 'Design', color: '#00E5FF', boardId: 2 },
+  { id: 7, name: 'Dev', color: '#FFD700', boardId: 2 },
+  { id: 8, name: 'Urgent', color: '#FF3366', boardId: 3 },
+  { id: 9, name: 'Design', color: '#00E5FF', boardId: 3 },
+  { id: 10, name: 'Dev', color: '#FFD700', boardId: 3 },
+  { id: 11, name: 'Copy', color: '#ccc', boardId: 3 },
+  { id: 12, name: 'Urgent', color: '#FF3366', boardId: 4 },
+  { id: 13, name: 'Design', color: '#00E5FF', boardId: 4 },
+  { id: 14, name: 'Dev', color: '#FFD700', boardId: 4 },
+  { id: 15, name: 'Copy', color: '#ccc', boardId: 4 },
+];
+
+let cards = [
+  { id: 1, title: 'Refonte landing page campagne Q3', description: 'Maquette Figma validée, reste à intégrer les composants header et hero.', order: 0, columnId: 1, dueDate: '2026-08-12', assigneeId: 1, createdAt: '2026-03-01T14:00:00Z' },
+  { id: 2, title: 'Intégration formulaire newsletter', description: 'Créer le formulaire avec validation et intégration Mailchimp.', order: 1, columnId: 1, dueDate: '2026-08-15', assigneeId: 2, createdAt: '2026-03-02T14:00:00Z' },
+  { id: 3, title: 'Rédaction articles blog SEO', description: '5 articles de blog optimisés SEO pour le Q3.', order: 2, columnId: 1, dueDate: '2026-08-18', assigneeId: 3, createdAt: '2026-03-03T14:00:00Z' },
+  { id: 4, title: 'Correction bug page paiement', description: 'Le formulaire de paiement ne valide pas les codes postaux canadiens. Corriger la regex et ajouter les tests unitaires correspondants.', order: 0, columnId: 2, dueDate: '2026-08-10', assigneeId: 1, createdAt: '2026-03-04T14:00:00Z' },
+  { id: 5, title: 'Maquette page produit mobile', description: 'Adapter la maquette desktop existante pour les formats mobiles (320px-768px).', order: 1, columnId: 2, dueDate: '2026-08-14', assigneeId: 2, createdAt: '2026-03-05T14:00:00Z' },
+  { id: 6, title: 'Mise en place CI/CD', description: 'Configurer GitHub Actions pour les pipelines de test et déploiement.', order: 0, columnId: 3, dueDate: '2026-08-05', assigneeId: 3, createdAt: '2026-03-06T14:00:00Z' },
+  { id: 7, title: 'Traduction page d\'accueil EN', description: 'Traduire l\'intégralité de la page d\'accueil en anglais.', order: 1, columnId: 3, dueDate: '2026-08-02', assigneeId: 1, createdAt: '2026-03-07T14:00:00Z' },
+  { id: 8, title: 'Kit UI v2 — composants', description: 'Finaliser les composants du kit UI version 2 : boutons, formulaires, modaux.', order: 2, columnId: 3, dueDate: '2026-07-28', assigneeId: 2, createdAt: '2026-03-08T14:00:00Z' },
+];
+
+let cardLabels = {
+  1: [1, 2],
+  2: [3],
+  3: [4],
+  4: [1],
+  5: [2, 3],
+  6: [3],
+  7: [4],
+  8: [2],
+};
+
+let comments = [
+  { id: 1, text: "J'ai reproduit le bug en local — c'est lié à la librairie de validation v3.2. Il faut monter en v3.3.", authorId: 2, cardId: 4, createdAt: '2026-08-09T10:00:00Z' },
+  { id: 2, text: "Je m'occupe de la mise à jour. Branche `fix/payment-validation` créée.", authorId: 3, cardId: 4, createdAt: '2026-08-09T11:00:00Z' },
+];
+
+let invitations = [
+  { id: 1, boardId: 1, email: 'invite@exemple.com', invitedById: 1, status: 'pending', createdAt: '2026-08-01T09:00:00Z' },
+];
+
+let activeBoardId = null;
+let activeCardId = null;
+
+const toastEl = document.getElementById('toast');
+function toast(msg, type = 'success') {
+  toastEl.textContent = msg;
+  toastEl.className = 'toast ' + type + ' show';
+  clearTimeout(toastEl._t);
+  toastEl._t = setTimeout(() => toastEl.classList.remove('show'), 3000);
+}
+
+const api = demoApi;
+// Current user helper
+let currentUser = (typeof getCurrentUser === "function") ? getCurrentUser() : null;
+function navigate(tab) {
+  tabs.forEach(t => t.classList.remove('active'));
+  Object.values(pages).forEach(p => p.classList.remove('active'));
+  const target = pages[tab];
+  if (target) target.classList.add('active');
+  const btn = document.querySelector(`.nav-btn[data-tab="${tab}"]`);
+  if (btn) btn.classList.add('active');
+}
+
+// =========================================================================
+// LOGIN
+// =========================================================================
+let isRegister = false;
+const toggleLink = document.getElementById('login-toggle-link');
+const toggleText = document.getElementById('login-toggle-text');
+const regNameField = document.getElementById('reg-name-field');
+const regConfirmField = document.getElementById('reg-confirm-field');
+const loginSubmitBtn = document.getElementById('login-submit-btn');
+const loginError = document.getElementById('login-error');
+
+toggleLink.addEventListener('click', () => {
+  isRegister = !isRegister;
+  loginError.classList.remove('show');
+  if (isRegister) {
+    regNameField.classList.add('show');
+    regConfirmField.classList.add('show');
+    toggleText.childNodes[0].textContent = 'Déjà un compte ? ';
+    toggleLink.textContent = 'Se connecter';
+    loginSubmitBtn.textContent = "S'INSCRIRE";
+  } else {
+    regNameField.classList.remove('show');
+    regConfirmField.classList.remove('show');
+    toggleText.childNodes[0].textContent = 'Pas de compte ? ';
+    toggleLink.textContent = "S'inscrire";
+    loginSubmitBtn.textContent = 'SE CONNECTER';
+  }
+});
+
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  loginError.classList.remove('show');
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) {
+    loginError.textContent = 'Email et mot de passe requis';
+    loginError.classList.add('show');
+    return;
+  }
+  try {
+    let res;
+    if (isRegister) {
+      const name = document.getElementById('reg-name').value.trim();
+      const confirm = document.getElementById('reg-confirm').value;
+      if (!name) { loginError.textContent = 'Nom complet requis'; loginError.classList.add('show'); return; }
+      if (password !== confirm) { loginError.textContent = 'Les mots de passe ne correspondent pas'; loginError.classList.add('show'); return; }
+      if (password.length < 8) { loginError.textContent = 'Minimum 8 caractères'; loginError.classList.add('show'); return; }
+      res = await api.register({ name, email, password });
+    } else {
+      res = await api.login({ email, password });
+    }
+    currentUser = res.user;
+    document.getElementById('nav-login').style.display = 'none';
+    document.getElementById('nav-dashboard').style.display = '';
+    document.getElementById('nav-board').style.display = '';
+    document.getElementById('nav-settings').style.display = '';
+    document.getElementById('nav-profile').style.display = '';
+    document.getElementById('nav-logout').style.display = '';
+    navigate('dashboard');
+    renderDashboard();
+    toast('Connecté en tant que ' + currentUser.name);
+  } catch (err) {
+    loginError.textContent = err.message;
+    loginError.classList.add('show');
+  }
+});
+
+document.getElementById('nav-logout').addEventListener('click', () => {
+  currentUser = null;
+  activeBoardId = null;
+  document.getElementById('nav-login').style.display = '';
+  document.getElementById('nav-dashboard').style.display = 'none';
+  document.getElementById('nav-board').style.display = 'none';
+  document.getElementById('nav-settings').style.display = 'none';
+  document.getElementById('nav-profile').style.display = 'none';
+  document.getElementById('nav-logout').style.display = 'none';
+  navigate('login');
+});
+
+// =========================================================================
+// NAVIGATION
+// =========================================================================
+const tabs = document.querySelectorAll('.nav-btn[data-tab]');
+const pages = {
+  login: document.getElementById('page-login'),
+  dashboard: document.getElementById('page-dashboard'),
+  board: document.getElementById('page-board'),
+  settings: document.getElementById('page-settings'),
+  profile: document.getElementById('page-profile'),
+};
+
+tabs.forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const tab = btn.dataset.tab;
+    if (tab === 'dashboard') { renderDashboard(); navigate(tab); return; }
+    if (tab === 'board') {
+      if (!activeBoardId) { toast('Sélectionnez un board d\'abord', 'error'); return; }
+      await renderBoard(activeBoardId);
+      navigate(tab);
+      return;
+    }
+    if (tab === 'settings') {
+      if (!activeBoardId) { toast('Sélectionnez un board d\'abord', 'error'); return; }
+      await renderSettings(activeBoardId);
+      navigate(tab);
+      return;
+    }
+    if (tab === 'profile') { renderProfile(); navigate(tab); return; }
+    navigate(tab);
+  });
+});
+
+// =========================================================================
+// DASHBOARD
+// =========================================================================
+async function renderDashboard() {
+  const grid = document.getElementById('dash-grid');
+  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:48px;font-weight:900;">Chargement...</div>';
+  try {
+    const boardList = await api.getBoards();
+    if (boardList.length === 0) {
+      grid.innerHTML = '<div class="empty-state">Aucun board pour le moment. Créez-en un !</div>';
+      return;
+    }
+    grid.innerHTML = boardList.map(b => `
+      <div class="board-card" data-board-id="${b.id}">
+        <div class="board-card-color" style="background:${b.color || '#000'};"></div>
+        <div class="board-card-body">
+          <div class="board-card-title">${b.title}</div>
+          <div class="board-card-meta">
+            <span>&#9679; ${(b.members || []).length} membres</span>
+            <span>&#9632; ${b._cardCount || 0} cartes</span>
+          </div>
+        </div>
+      </div>
+    `).join('');
+    grid.querySelectorAll('.board-card').forEach(el => {
+      el.addEventListener('click', async () => {
+        activeBoardId = Number(el.dataset.boardId);
+        await renderBoard(activeBoardId);
+        navigate('board');
+      });
+    });
+  } catch (err) {
+    grid.innerHTML = '<div class="empty-state">Erreur : ' + err.message + '</div>';
+  }
+}
+
+document.getElementById('dash-new-board-btn').addEventListener('click', async () => {
+  const title = prompt('Nom du nouveau board :');
+  if (!title || !title.trim()) return;
+  try {
+    const board = await api.createBoard({ title: title.trim() });
+    activeBoardId = board.id;
+    await renderBoard(activeBoardId);
+    navigate('board');
+    toast('Board "' + board.title + '" créé');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+});
+
+// =========================================================================
+// BOARD
+// =========================================================================
+async function renderBoard(boardId) {
+  const colsContainer = document.getElementById('board-cols');
+  colsContainer.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:48px;font-weight:900;">Chargement...</div>';
+  try {
+    const board = await api.getBoard(boardId);
+    document.getElementById('board-title').textContent = board.title;
+    const avatarsEl = document.getElementById('board-avatars');
+    const mems = board.members || [];
+    avatarsEl.innerHTML = mems.slice(0, 3).map(m => {
+      const initials = m.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+      return `<div class="board-avatar">${initials}</div>`;
+    }).join('');
+    if (mems.length > 3) avatarsEl.innerHTML += `<div class="board-avatar">+${mems.length - 3}</div>`;
+    if (mems.length === 0) avatarsEl.innerHTML = '';
+
+    const bCols = board.columns || [];
+    if (bCols.length === 0) {
+      colsContainer.innerHTML = '<div class="empty-state">Aucune colonne dans ce board</div>';
+      return;
+    }
+    colsContainer.innerHTML = bCols.map(col => `
+      <div class="board-col" data-col-id="${col.id}">
+        <div class="board-col-header">
+          <span>&#9632; ${col.title}</span>
+          <span class="count" id="col-count-${col.id}">0</span>
+        </div>
+        <div class="board-col-body" id="col-body-${col.id}">
+          <div style="padding:16px;text-align:center;font-weight:700;">Chargement...</div>
+        </div>
+      </div>
+    `).join('');
+
+    for (const col of bCols) {
+      loadColumnCards(col.id);
+    }
+  } catch (err) {
+    colsContainer.innerHTML = '<div class="empty-state">Erreur : ' + err.message + '</div>';
+  }
+}
+
+async function loadColumnCards(colId) {
+  try {
+    const colCards = await api.getCards(colId);
+    const body = document.getElementById('col-body-' + colId);
+    const countEl = document.getElementById('col-count-' + colId);
+    if (countEl) countEl.textContent = colCards.length;
+    if (colCards.length === 0) {
+      body.innerHTML = '<div style="padding:16px;text-align:center;font-weight:700;font-size:11px;text-transform:uppercase;opacity:.4;">Aucune carte</div>';
+      return;
+    }
+    body.innerHTML = colCards.map(ca => {
+      const labelsHtml = (ca.labels || []).map(l => {
+        const cls = l.name.toLowerCase() === 'urgent' ? 'urgent' : l.name.toLowerCase() === 'design' ? 'design' : l.name.toLowerCase() === 'dev' ? 'dev' : l.name.toLowerCase() === 'copy' ? 'copy' : '';
+        return `<span class="task-label ${cls}">${l.name}</span>`;
+      }).join('');
+      const assigneeName = ca.assignee ? ca.assignee.name.split(' ')[0] : '';
+      const initials = ca.assignee ? ca.assignee.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : '--';
+      const dateStr = ca.dueDate ? new Date(ca.dueDate + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : '';
+      return `<div class="task-card" data-card-id="${ca.id}" onclick="openCardModal(${ca.id})">
+        ${labelsHtml ? `<div class="task-labels">${labelsHtml}</div>` : ''}
+        <div class="task-title">${ca.title}</div>
+        <div class="task-footer">
+          ${ca.assignee ? `<span class="task-assignee"><span class="mini-avatar">${initials}</span> ${assigneeName}</span>` : ''}
+          ${dateStr ? `<span class="task-date">&#9679; ${dateStr}</span>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  } catch (err) {
+    const body = document.getElementById('col-body-' + colId);
+    if (body) body.innerHTML = '<div style="padding:16px;text-align:center;font-weight:700;color:#FF3366;">Erreur</div>';
+  }
+}
+
+document.getElementById('board-invite-btn').addEventListener('click', async () => {
+  const email = prompt('Email du membre à inviter :');
+  if (!email || !email.trim()) return;
+  try {
+    await api.inviteMember(activeBoardId, email.trim());
+    toast('Invitation envoyée à ' + email.trim());
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+});
+
+// =========================================================================
+// CARD MODAL
+// =========================================================================
+async function openCardModal(cardId) {
+  activeCardId = cardId;
+  try {
+    const card = await api.getCard(cardId);
+    const cardComments = await api.getComments(cardId);
+    document.getElementById('modal-title').textContent = card.title;
+    document.getElementById('modal-desc').textContent = card.description || 'Aucune description.';
+    const assigneeName = card.assignee ? card.assignee.name : 'Non assigné';
+    document.getElementById('modal-assignee').textContent = assigneeName;
+    document.getElementById('modal-due').textContent = card.dueDate ? new Date(card.dueDate + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Non définie';
+    document.getElementById('modal-labels').textContent = (card.labels || []).map(l => l.name).join(', ') || 'Aucun';
+    const commentsEl = document.getElementById('modal-comments');
+    if (cardComments.length === 0) {
+      commentsEl.innerHTML = '<div class="modal-comment"><div class="modal-comment-author">Système</div><div class="modal-comment-text">Aucun commentaire pour cette tâche.</div></div>';
+    } else {
+      commentsEl.innerHTML = cardComments.map(cm => {
+        const authorName = cm.author ? cm.author.name : 'Utilisateur inconnu';
+        const dateStr = new Date(cm.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+        return `<div class="modal-comment"><div class="modal-comment-author">${authorName} &#9679; ${dateStr}</div><div class="modal-comment-text">${cm.text}</div></div>`;
+      }).join('');
+    }
+    document.getElementById('modal-overlay').classList.add('show');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+  activeCardId = null;
+}
+
+document.getElementById('modal-overlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+document.getElementById('modal-comment-btn').addEventListener('click', async () => {
+  const input = document.getElementById('modal-comment-input');
+  const text = input.value.trim();
+  if (!text || !activeCardId) return;
+  try {
+    await api.addComment(activeCardId, { text });
+    input.value = '';
+    const comments = await api.getComments(activeCardId);
+    const commentsEl = document.getElementById('modal-comments');
+    commentsEl.innerHTML = comments.map(cm => {
+      const authorName = cm.author ? cm.author.name : 'Utilisateur inconnu';
+      const dateStr = new Date(cm.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+      return `<div class="modal-comment"><div class="modal-comment-author">${authorName} &#9679; ${dateStr}</div><div class="modal-comment-text">${cm.text}</div></div>`;
+    }).join('');
+    toast('Commentaire ajouté');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+});
+
+document.getElementById('modal-comment-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('modal-comment-btn').click();
+});
+
+// =========================================================================
+// SETTINGS
+// =========================================================================
+async function renderSettings(boardId) {
+  try {
+    const board = await api.getBoard(boardId);
+    const bCols = board.columns || [];
+    const bLabels = await api.getLabels(boardId);
+    document.getElementById('settings-board-name').value = board.title;
+    document.getElementById('settings-board-desc').value = board.description || '';
+
+    const colList = document.getElementById('settings-col-list');
+    colList.innerHTML = bCols.map((col, i) => `
+      <div class="settings-col-item" data-col-id="${col.id}">
+        <span>&#9632; ${col.title}</span>
+        <div class="col-actions">
+          <button class="col-edit" title="Modifier">&#9998;</button>
+          <button class="col-del del" title="Supprimer">&#10005;</button>
+        </div>
+      </div>
+    `).join('');
+    colList.querySelectorAll('.col-edit').forEach((btn, i) => {
+      btn.addEventListener('click', async () => {
+        const col = bCols[i];
+        const newTitle = prompt('Nouveau nom de la colonne :', col.title);
+        if (newTitle && newTitle.trim()) {
+          await api.updateColumn(col.id, { title: newTitle.trim() });
+          await renderSettings(boardId);
+          toast('Colonne renommée');
+        }
+      });
+    });
+    colList.querySelectorAll('.col-del').forEach((btn, i) => {
+      btn.addEventListener('click', async () => {
+        const col = bCols[i];
+        if (confirm('Supprimer la colonne "' + col.title + '" ?')) {
+          await api.deleteColumn(col.id);
+          await renderSettings(boardId);
+          toast('Colonne supprimée');
+        }
+      });
+    });
+
+    const labelList = document.getElementById('settings-label-list');
+    labelList.innerHTML = bLabels.map(l => `
+      <div class="settings-label-item" data-label-id="${l.id}">
+        <div class="color-swatch" style="background:${l.color};"></div>
+        <span>${l.name}</span>
+      </div>
+    `).join('');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+document.getElementById('settings-save-btn').addEventListener('click', async () => {
+  if (!activeBoardId) { toast('Aucun board sélectionné', 'error'); return; }
+  const title = document.getElementById('settings-board-name').value.trim();
+  const desc = document.getElementById('settings-board-desc').value.trim();
+  if (!title) { toast('Le nom du board est requis', 'error'); return; }
+  try {
+    await api.updateBoard(activeBoardId, { title, description: desc });
+    toast('Board mis à jour');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+});
+
+document.getElementById('settings-add-col').addEventListener('click', async () => {
+  if (!activeBoardId) return;
+  const title = prompt('Nom de la nouvelle colonne :');
+  if (!title || !title.trim()) return;
+  try {
+    await api.createColumn(activeBoardId, { title: title.trim() });
+    await renderSettings(activeBoardId);
+    toast('Colonne ajoutée');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+});
+
+document.getElementById('settings-add-label').addEventListener('click', async () => {
+  if (!activeBoardId) return;
+  const name = prompt('Nom du nouveau label :');
+  if (!name || !name.trim()) return;
+  const color = prompt('Couleur hexadécimale (ex: #4F46E5) :', '#4F46E5');
+  if (!color || !color.trim()) return;
+  try {
+    await api.createLabel(activeBoardId, { name: name.trim(), color: color.trim() });
+    await renderSettings(activeBoardId);
+    toast('Label ajouté');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+});
+
+// =========================================================================
+// PROFILE
+// =========================================================================
+function renderProfile() {
+  if (!currentUser) return;
+  const initials = currentUser.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  document.getElementById('profile-avatar').textContent = initials;
+  document.getElementById('profile-name-display').textContent = currentUser.name;
+  document.getElementById('profile-email-display').textContent = currentUser.email;
+  document.getElementById('profile-name').value = currentUser.name;
+  document.getElementById('profile-email').value = currentUser.email;
+  document.getElementById('profile-pw-current').value = '';
+  document.getElementById('profile-pw-new').value = '';
+  document.getElementById('profile-pw-confirm').value = '';
+}
+
+document.getElementById('profile-save-btn').addEventListener('click', async () => {
+  if (!currentUser) return;
+  const name = document.getElementById('profile-name').value.trim();
+  const email = document.getElementById('profile-email').value.trim();
+  const pwCurrent = document.getElementById('profile-pw-current').value;
+  const pwNew = document.getElementById('profile-pw-new').value;
+  const pwConfirm = document.getElementById('profile-pw-confirm').value;
+  if (!name || !email) { toast('Nom et email requis', 'error'); return; }
+  const updateData = { name, email };
+  if (pwNew || pwCurrent || pwConfirm) {
+    if (!pwCurrent) { toast('Mot de passe actuel requis', 'error'); return; }
+    if (pwNew !== pwConfirm) { toast('Les nouveaux mots de passe ne correspondent pas', 'error'); return; }
+    if (pwNew.length < 8) { toast('Minimum 8 caractères', 'error'); return; }
+    const user = users.find(u => u.id === currentUser.id);
+    if (!user || user.password !== pwCurrent) { toast('Mot de passe actuel incorrect', 'error'); return; }
+    updateData.password = pwNew;
+  }
+  try {
+    await api.updateMe(updateData);
+    renderProfile();
+    toast('Profil mis à jour');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+});
+</script>
+</body>
+</html>
