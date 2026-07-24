@@ -45,6 +45,14 @@ async function put(path, body, token) {
   return { status: res.status, data }
 }
 
+async function patch(path, body, token) {
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers['Authorization'] = 'Bearer ' + token
+  const res = await fetch(BASE + path, { method: 'PATCH', headers, body: JSON.stringify(body) })
+  const data = res.status === 204 ? null : await res.json()
+  return { status: res.status, data }
+}
+
 async function del(path, token) {
   const headers = {}
   if (token) headers['Authorization'] = 'Bearer ' + token
@@ -226,6 +234,99 @@ describe('Colonnes', () => {
   it('retourne 404 sur colonne inconnue', async () => {
     const { status } = await put('/columns/999', { title: 'Nope' }, token)
     expect(status).toBe(404)
+  })
+
+})
+
+describe('Cartes', () => {
+
+  let token, colId
+
+  beforeEach(async () => {
+    await fetch(BASE + '/_reset', { method: 'POST' })
+    const { data: loginData } = await post('/auth/login', { email: 'alex@protask.dev', password: 'pass123' })
+    token = loginData.token
+    const { data: board } = await post('/boards', { title: 'Carte Test' }, token)
+    const { data: cols } = await get('/boards/' + board.id + '/columns', token)
+    colId = cols[0].id
+  })
+
+  it('liste les cartes d\'une colonne', async () => {
+    const { status, data } = await get('/columns/' + colId + '/cards', token)
+    expect(status).toBe(200)
+    expect(Array.isArray(data)).toBe(true)
+    data.forEach(c => {
+      expect(c.assignee).toBeDefined()
+      expect(c.labels).toBeDefined()
+    })
+  })
+
+  it('crée une carte', async () => {
+    const { status, data } = await post('/columns/' + colId + '/cards', { title: 'Nouvelle carte', description: 'Desc', dueDate: '2025-05-01', assigneeId: 1, labels: [] }, token)
+    expect(status).toBe(201)
+    expect(data.title).toBe('Nouvelle carte')
+    expect(data.description).toBe('Desc')
+    expect(data.dueDate).toBe('2025-05-01')
+    expect(data.columnId).toBe(colId)
+    expect(data.order).toBeGreaterThanOrEqual(0)
+  })
+
+  it('exige un titre pour créer une carte', async () => {
+    const { status, data } = await post('/columns/' + colId + '/cards', {}, token)
+    expect(status).toBe(400)
+    expect(data.error).toContain('titre')
+  })
+
+  it('récupère une carte avec assignee, labels et commentaires', async () => {
+    const { data: created } = await post('/columns/' + colId + '/cards', { title: 'Détail' }, token)
+    const { status, data } = await get('/cards/' + created.id, token)
+    expect(status).toBe(200)
+    expect(data.title).toBe('Détail')
+    expect(data.assignee).toBeDefined()
+    expect(data.labels).toBeDefined()
+    expect(data.comments).toBeDefined()
+  })
+
+  it('retourne 404 sur carte inconnue', async () => {
+    const { status } = await get('/cards/999', token)
+    expect(status).toBe(404)
+    expect(status).toBe(404)
+  })
+
+  it('met à jour titre, description, dueDate, assignee et labels', async () => {
+    const { data: card } = await post('/columns/' + colId + '/cards', { title: 'Avant' }, token)
+    const { status, data } = await patch('/cards/' + card.id, { title: 'Après', description: 'Modifié', dueDate: '2025-06-01', assigneeId: 2, labels: [] }, token)
+    expect(status).toBe(200)
+    expect(data.title).toBe('Après')
+    expect(data.description).toBe('Modifié')
+    expect(data.dueDate).toBe('2025-06-01')
+    expect(data.assignee).toBeDefined()
+  })
+
+  it('supprime une carte et ses commentaires', async () => {
+    const { data: card } = await post('/columns/' + colId + '/cards', { title: 'À supprimer' }, token)
+    const { status } = await del('/cards/' + card.id, token)
+    expect(status).toBe(204)
+    const { data: cards } = await get('/columns/' + colId + '/cards', token)
+    expect(cards.find(c => c.id === card.id)).toBeUndefined()
+  })
+
+  it('déplace une carte vers une autre colonne', async () => {
+    const { data: cols } = await get('/boards/1/columns', token)
+    const otherColId = cols.find(c => c.id !== colId).id
+    const { data: card } = await post('/columns/' + colId + '/cards', { title: 'Mobile' }, token)
+    const { status, data } = await post('/cards/' + card.id + '/move', { columnId: otherColId }, token)
+    expect(status).toBe(200)
+    expect(data.columnId).toBe(otherColId)
+  })
+
+  it('réordonne les cartes', async () => {
+    const c1 = (await post('/columns/' + colId + '/cards', { title: 'C1' }, token)).data
+    const c2 = (await post('/columns/' + colId + '/cards', { title: 'C2' }, token)).data
+    const { status, data } = await post('/cards/reorder', [{ id: c1.id, order: 1 }, { id: c2.id, order: 0 }], token)
+    expect(status).toBe(200)
+    expect(data.find(c => c.id === c1.id).order).toBe(1)
+    expect(data.find(c => c.id === c2.id).order).toBe(0)
   })
 
 })

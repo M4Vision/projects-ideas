@@ -77,8 +77,26 @@ function findColumn(id) {
   return c
 }
 
+function findCard(id) {
+  const c = mockData.cards.find(x => x.id === id)
+  if (!c) throw new Error('Carte introuvable.')
+  return c
+}
+
 function findUser(id) {
   return mockData.users.find(x => x.id === id)
+}
+
+function resolveCard(card, includeComments = false) {
+  const assignee = card.assigneeId ? findUser(card.assigneeId) : null
+  const resolvedLabels = (card.labels || []).map(id => mockData.labels.find(l => l.id === id)).filter(Boolean)
+  const result = { ...card, labels: resolvedLabels, assignee: assignee ? sanitizeUser(assignee) : null }
+  if (includeComments) {
+    result.comments = mockData.comments.filter(c => c.cardId === card.id).map(c => ({
+      ...c, author: sanitizeUser(findUser(c.authorId))
+    }))
+  }
+  return result
 }
 
 const app = new Hono()
@@ -234,6 +252,88 @@ app.delete('/api/columns/:id', (c) => {
     mockData.cards = mockData.cards.filter(card => card.columnId !== col.id)
     mockData.columns = mockData.columns.filter(x => x.id !== col.id)
     return c.body(null, 204)
+  } catch (e) {
+    return c.json({ error: e.message }, 404)
+  }
+})
+
+// Cards
+app.get('/api/columns/:id/cards', (c) => {
+  try {
+    findColumn(parseInt(c.req.param('id')))
+    const cards = mockData.cards.filter(card => card.columnId === parseInt(c.req.param('id'))).sort((a, b) => a.order - b.order)
+    return c.json(cards.map(card => resolveCard(card)))
+  } catch (e) {
+    return c.json({ error: e.message }, 404)
+  }
+})
+
+app.post('/api/columns/:id/cards', async (c) => {
+  try {
+    const colId = parseInt(c.req.param('id'))
+    findColumn(colId)
+    const { title, description, dueDate, assigneeId, labels } = await c.req.json()
+    if (!title) return c.json({ error: 'Le titre est obligatoire.' }, 400)
+    const colCards = mockData.cards.filter(card => card.columnId === colId)
+    const card = { id: mockData.cards.length + 1, title, description: description || '', order: colCards.length, columnId: colId, dueDate: dueDate || null, assigneeId: assigneeId || null, labels: labels || [] }
+    mockData.cards.push(card)
+    return c.json(resolveCard(card), 201)
+  } catch (e) {
+    return c.json({ error: e.message }, 404)
+  }
+})
+
+app.get('/api/cards/:id', (c) => {
+  try {
+    return c.json(resolveCard(findCard(parseInt(c.req.param('id'))), true))
+  } catch (e) {
+    return c.json({ error: e.message }, 404)
+  }
+})
+
+app.patch('/api/cards/:id', async (c) => {
+  try {
+    const card = findCard(parseInt(c.req.param('id')))
+    const data = await c.req.json()
+    const allowed = ['title', 'description', 'dueDate', 'assigneeId', 'labels', 'order']
+    for (const key of allowed) {
+      if (key in data) card[key] = data[key]
+    }
+    return c.json(resolveCard(card))
+  } catch (e) {
+    return c.json({ error: e.message }, 404)
+  }
+})
+
+app.delete('/api/cards/:id', (c) => {
+  try {
+    findCard(parseInt(c.req.param('id')))
+    const id = parseInt(c.req.param('id'))
+    mockData.comments = mockData.comments.filter(cm => cm.cardId !== id)
+    mockData.cards = mockData.cards.filter(card => card.id !== id)
+    return c.body(null, 204)
+  } catch (e) {
+    return c.json({ error: e.message }, 404)
+  }
+})
+
+app.post('/api/cards/reorder', async (c) => {
+  const items = await c.req.json()
+  items.forEach(({ id, order }) => {
+    const card = mockData.cards.find(x => x.id === id)
+    if (card) card.order = order
+  })
+  return c.json(mockData.cards.sort((a, b) => a.order - b.order).map(card => resolveCard(card)))
+})
+
+app.post('/api/cards/:id/move', async (c) => {
+  try {
+    const card = findCard(parseInt(c.req.param('id')))
+    const { columnId, order } = await c.req.json()
+    findColumn(columnId)
+    card.columnId = columnId
+    if (typeof order === 'number') card.order = order
+    return c.json(resolveCard(card))
   } catch (e) {
     return c.json({ error: e.message }, 404)
   }

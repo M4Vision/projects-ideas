@@ -76,6 +76,36 @@ const demoApi = {
   async reorderColumns(items) {
     return request('PUT', '/columns/reorder', items)
   },
+
+  async getCards(columnId) {
+    return request('GET', '/columns/' + columnId + '/cards')
+  },
+
+  async getCard(id) {
+    return request('GET', '/cards/' + id)
+  },
+
+  async createCard(columnId, data) {
+    return request('POST', '/columns/' + columnId + '/cards', data)
+  },
+
+  async updateCard(id, data) {
+    return request('PATCH', '/cards/' + id, data)
+  },
+
+  async deleteCard(id) {
+    const res = await fetch(API_URL + '/cards/' + id, { method: 'DELETE', headers: headers() })
+    if (!res.ok) throw new Error((await res.json()).error || 'Erreur ' + res.status)
+    return null
+  },
+
+  async moveCard(id, data) {
+    return request('POST', '/cards/' + id + '/move', data)
+  },
+
+  async reorderCards(items) {
+    return request('POST', '/cards/reorder', items)
+  },
 }
 
 export default demoApi
