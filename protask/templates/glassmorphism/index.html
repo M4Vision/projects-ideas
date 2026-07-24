@@ -1300,8 +1300,8 @@
 				<div class="login-logo">ProTask</div>
 				<p class="login-sub">Gerez vos projets en toute simplicite</p>
 				<div class="login-error" id="login-error"></div>
-				<input class="input" type="email" placeholder="Adresse e-mail" id="login-email" value="alex@protask.app">
-				<input class="input" type="password" placeholder="Mot de passe" id="login-pass" value="password">
+				<input class="input" type="email" placeholder="Adresse e-mail" id="login-email" value="alex@protask.dev">
+				<input class="input" type="password" placeholder="Mot de passe" id="login-pass" value="pass123">
 				<div class="login-toggle" id="register-fields">
 					<input class="input" type="text" placeholder="Nom complet" id="login-name">
 					<input class="input" type="password" placeholder="Confirmer le mot de passe" id="login-pass-confirm">
@@ -1903,13 +1903,14 @@ let currentUser = (typeof getCurrentUser === "function") ? getCurrentUser() : nu
 			// ── Init: auto-login on load ──
 			(function init() {
 				showLoading();
-				api.login({ email: 'alex@protask.app', password: 'password' }).then(function (r) {
+				api.login({ email: 'alex@protask.dev', password: 'pass123' }).then(function (r) {
 					currentUser = r.user;
 					authToken = r.token;
 					hideLoading();
 					switchPage('dashboard');
 				}).catch(function () {
 					hideLoading();
+					switchPage('login');
 				});
 			})();
 

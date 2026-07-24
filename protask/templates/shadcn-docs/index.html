@@ -625,7 +625,7 @@ textarea.field-input { min-height: 60px; resize: vertical; font-family: inherit;
     </header>
 
     <main class="main" id="mainContent">
-      <div class="page active" id="page-dashboard">
+      <div class="page" id="page-dashboard">
         <h1 class="page-title">Mes boards</h1>
         <div class="board-grid" id="dashboardBoardGrid"></div>
       </div>
@@ -1424,7 +1424,7 @@ document.getElementById('inviteModal').addEventListener('click', function(e) {
   if (e.target === this) closeInviteModal();
 });
 
-renderDashboard();
+switchPage('login');
 </script>
 </body>
 </html>
