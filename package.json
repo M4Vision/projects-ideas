@@ -4,7 +4,7 @@
   "description": "Collection de mini-projets web pour s'entrainer sur differents frameworks",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -n vite,api -c cyan,green \"vite\" \"node protask/api/start.js\"",
     "build": "vite build",
     "preview": "vite preview",
     "test": "playwright test",
@@ -13,7 +13,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "SLOW_MO=300 playwright test --headed",
     "test:api": "vitest run protask/api/e2e.spec.js",
-    "dev:api": "node protask/api/server.js",
+    "dev:api": "node protask/api/start.js",
     "preview-report": "playwright show-report"
   },
   "keywords": [],
@@ -22,6 +22,7 @@
   "packageManager": "pnpm@10.30.2",
   "devDependencies": {
     "@playwright/test": "^1.61.1",
+    "concurrently": "^10.0.4",
     "vite": "^8.1.5",
     "vitest": "^4.1.10"
   },
