@@ -144,6 +144,27 @@ app.post('/api/auth/logout', (c) => {
   return c.json({ success: true })
 })
 
+// Users
+app.get('/api/users/me', (c) => {
+  return c.json(sanitizeUser(c.get('currentUser')))
+})
+
+app.put('/api/users/me', async (c) => {
+  const user = c.get('currentUser')
+  const data = await c.req.json()
+  const allowed = ['name', 'email', 'avatar', 'password']
+  for (const key of allowed) {
+    if (key in data) user[key] = data[key]
+  }
+  return c.json(sanitizeUser(user))
+})
+
+app.get('/api/users/:id', (c) => {
+  const user = findUser(parseInt(c.req.param('id')))
+  if (!user) return c.json({ error: 'Utilisateur introuvable.' }, 404)
+  return c.json(sanitizeUser(user))
+})
+
 // Boards
 app.get('/api/boards', (c) => {
   const user = c.get('currentUser')
@@ -424,9 +445,9 @@ app.post('/api/boards/:id/invitations', async (c) => {
     const { email } = await c.req.json()
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return c.json({ error: 'Email invalide.' }, 400)
     const invited = mockData.users.find(u => u.email === email)
-    if (!invited) return c.json({ error: 'Utilisateur inexistant.' }, 404)
+    if (!invited) return c.json({ error: 'Aucun utilisateur trouvé avec cet email.' }, 404)
     if ((mockData.boardMembers[board.id] || []).includes(invited.id)) return c.json({ error: 'Déjà membre.' }, 400)
-    if (mockData.invitations.find(i => i.boardId === board.id && i.email === email && i.status === 'pending')) return c.json({ error: 'Déjà invité.' }, 400)
+    if (mockData.invitations.find(i => i.boardId === board.id && i.email === email && i.status === 'pending')) return c.json({ error: 'Une invitation est déjà en attente pour cet email.' }, 400)
     const inv = { id: mockData.invitations.length + 1, boardId: board.id, email, invitedById: user.id, status: 'pending', createdAt: new Date().toISOString() }
     mockData.invitations.push(inv)
     return c.json(inv, 201)
@@ -450,7 +471,8 @@ app.patch('/api/invitations/:id', async (c) => {
   const inv = mockData.invitations.find(i => i.id === id)
   if (!inv) return c.json({ error: 'Invitation introuvable.' }, 404)
   const user = c.get('currentUser')
-  if (user.email !== inv.email) return c.json({ error: 'Vous ne pouvez pas répondre à cette invitation.' }, 403)
+  const board = mockData.boards.find(b => b.id === inv.boardId)
+  if (user.email !== inv.email && (!board || board.ownerId !== user.id)) return c.json({ error: 'Vous ne pouvez pas répondre à cette invitation.' }, 403)
   if (inv.status !== 'pending') return c.json({ error: 'Cette invitation n\'est plus en attente.' }, 400)
   const { status } = await c.req.json()
   if (!['accepted', 'declined'].includes(status)) return c.json({ error: 'Statut invalide.' }, 400)

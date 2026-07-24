@@ -14,7 +14,7 @@ const projectsData = [
 		icon: '📋',
 		docs: '/protask/docs/PRD.md',
 		openapi: '/protask/docs/openapi.json',
-		demoApi: '/protask/demo-api.js',
+		demoApi: '/protask/api/client.js',
 		themes: [
 			{ id: 'neo-brutalist', name: 'Neo-Brutalist', desc: 'Bordures épaisses, couleurs vives, bold', file: 'protask/templates/neo-brutalist/index.html' },
 		],

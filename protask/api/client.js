@@ -1,5 +1,6 @@
-const API_URL = globalThis.API_URL || 'http://localhost:3001/api'
+const API_URL = (globalThis.API_URL || 'http://localhost:3001') + '/api'
 let _token = null
+let _currentUser = null
 
 function headers() {
   const h = { 'Content-Type': 'application/json' }
@@ -13,30 +14,52 @@ async function request(method, path, body) {
     headers: headers(),
     body: body ? JSON.stringify(body) : undefined,
   })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.error || 'Erreur ' + res.status)
+  const data = res.status === 204 ? null : await res.json()
+  if (!res.ok) throw new Error((data && data.error) || 'Erreur ' + res.status)
   return data
 }
 
 const demoApi = {
+  // === AUTH ===
   async register(data) {
     const result = await request('POST', '/auth/register', data)
     _token = result.token
+    _currentUser = result.user
     return result
   },
 
   async login(data) {
     const result = await request('POST', '/auth/login', data)
     _token = result.token
+    _currentUser = result.user
     return result
   },
 
   async logout() {
     const result = await request('POST', '/auth/logout')
     _token = null
+    _currentUser = null
     return result
   },
 
+  // === USERS ===
+  async getMe() {
+    const user = await request('GET', '/users/me')
+    _currentUser = user
+    return user
+  },
+
+  async updateMe(data) {
+    const user = await request('PUT', '/users/me', data)
+    _currentUser = user
+    return user
+  },
+
+  async getUser(id) {
+    return request('GET', '/users/' + id)
+  },
+
+  // === BOARDS ===
   async getBoards() {
     return request('GET', '/boards')
   },
@@ -57,6 +80,7 @@ const demoApi = {
     return request('DELETE', '/boards/' + id)
   },
 
+  // === COLUMNS ===
   async getColumns(boardId) {
     return request('GET', '/boards/' + boardId + '/columns')
   },
@@ -77,6 +101,7 @@ const demoApi = {
     return request('PUT', '/columns/reorder', items)
   },
 
+  // === CARDS ===
   async getCards(columnId) {
     return request('GET', '/columns/' + columnId + '/cards')
   },
@@ -94,19 +119,20 @@ const demoApi = {
   },
 
   async deleteCard(id) {
-    const res = await fetch(API_URL + '/cards/' + id, { method: 'DELETE', headers: headers() })
-    if (!res.ok) throw new Error((await res.json()).error || 'Erreur ' + res.status)
-    return null
+    return request('DELETE', '/cards/' + id)
   },
 
-  async moveCard(id, data) {
-    return request('POST', '/cards/' + id + '/move', data)
+  async moveCard(id, columnId, order) {
+    const body = { columnId }
+    if (order !== undefined) body.order = order
+    return request('POST', '/cards/' + id + '/move', body)
   },
 
   async reorderCards(items) {
     return request('POST', '/cards/reorder', items)
   },
 
+  // === LABELS ===
   async getLabels(boardId) {
     return request('GET', '/boards/' + boardId + '/labels')
   },
@@ -120,11 +146,10 @@ const demoApi = {
   },
 
   async deleteLabel(id) {
-    const res = await fetch(API_URL + '/labels/' + id, { method: 'DELETE', headers: headers() })
-    if (!res.ok) throw new Error((await res.json()).error || 'Erreur ' + res.status)
-    return null
+    return request('DELETE', '/labels/' + id)
   },
 
+  // === COMMENTS ===
   async getComments(cardId) {
     return request('GET', '/cards/' + cardId + '/comments')
   },
@@ -134,11 +159,10 @@ const demoApi = {
   },
 
   async deleteComment(id) {
-    const res = await fetch(API_URL + '/comments/' + id, { method: 'DELETE', headers: headers() })
-    if (!res.ok) throw new Error((await res.json()).error || 'Erreur ' + res.status)
-    return null
+    return request('DELETE', '/comments/' + id)
   },
 
+  // === INVITATIONS ===
   async inviteMember(boardId, email) {
     return request('POST', '/boards/' + boardId + '/invitations', { email })
   },
@@ -147,21 +171,40 @@ const demoApi = {
     return request('GET', '/boards/' + boardId + '/invitations')
   },
 
+  async acceptInvitation(id) {
+    return request('PATCH', '/invitations/' + id, { status: 'accepted' })
+  },
+
   async respondToInvitation(id, status) {
     return request('PATCH', '/invitations/' + id, { status })
   },
 
   async cancelInvitation(id) {
-    const res = await fetch(API_URL + '/invitations/' + id, { method: 'DELETE', headers: headers() })
-    if (!res.ok) throw new Error((await res.json()).error || 'Erreur ' + res.status)
-    return null
+    return request('DELETE', '/invitations/' + id)
   },
 
   async removeMember(boardId, userId) {
-    const res = await fetch(API_URL + '/boards/' + boardId + '/members/' + userId, { method: 'DELETE', headers: headers() })
-    if (!res.ok) throw new Error((await res.json()).error || 'Erreur ' + res.status)
-    return null
+    return request('DELETE', '/boards/' + boardId + '/members/' + userId)
   },
 }
 
-export default demoApi
+function getCurrentUser() { return _currentUser }
+
+window.getCurrentUser = getCurrentUser
+window.demoApi = demoApi
+
+// API call tracking for e2e tests
+;(function() {
+  if (window.__apiPatched) return
+  window.__apiPatched = true
+  window.__apiCalls = window.__apiCalls || new Set()
+  for (const key of Object.keys(demoApi)) {
+    if (typeof demoApi[key] === 'function') {
+      const orig = demoApi[key]
+      demoApi[key] = function() {
+        window.__apiCalls.add(key)
+        return orig.apply(this, arguments)
+      }
+    }
+  }
+})()

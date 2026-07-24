@@ -30,7 +30,7 @@ test.describe('index.html — Navigateur de projets', () => {
     const sidebar = page.locator('#sidebar');
     await expect(sidebar.locator('a[href*="PRD"]')).toBeVisible();
     await expect(sidebar.locator('a[href*="openapi"]')).toBeVisible();
-    await expect(sidebar.locator('a[href*="demo-api"]')).toBeVisible();
+    await expect(sidebar.locator('a[href*="client"]')).toBeVisible();
   });
 
   test('le chargement du template dans l\'iframe', async ({ page }) => {

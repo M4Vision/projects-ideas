@@ -1,5 +1,5 @@
 export async function interceptDemoApi(page) {
-  await page.route('**/demo-api.js', async route => {
+  await page.route('**/api/client.js', async route => {
     const response = await route.fetch();
     let body = await response.text();
     body += `

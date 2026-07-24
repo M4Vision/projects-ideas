@@ -20,10 +20,18 @@ export default defineConfig({
     ['list'],
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
   ],
-  webServer: {
-    command: 'pnpm dev',
-    port: 3000,
-    timeout: 10000,
-    reuseExistingServer: true,
-  },
+  webServer: [
+    {
+      command: 'pnpm dev',
+      port: 3000,
+      timeout: 10000,
+      reuseExistingServer: true,
+    },
+    {
+      command: 'node protask/api/start.js',
+      port: 3001,
+      timeout: 10000,
+      reuseExistingServer: true,
+    },
+  ],
 });

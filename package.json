@@ -13,6 +13,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "SLOW_MO=300 playwright test --headed",
     "test:api": "vitest run protask/api/e2e.spec.js",
+    "dev:api": "node protask/api/server.js",
     "preview-report": "playwright show-report"
   },
   "keywords": [],

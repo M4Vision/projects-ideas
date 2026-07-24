@@ -470,14 +470,14 @@ describe('Invitations', () => {
   it('rejette utilisateur inexistant', async () => {
     const { status, data } = await post('/boards/' + boardId + '/invitations', { email: 'nobody@test.com' }, alexToken)
     expect(status).toBe(404)
-    expect(data.error).toContain('inexistant')
+    expect(data.error).toContain('trouvé')
   })
 
   it('rejette un membre déjà invité', async () => {
     await post('/boards/' + boardId + '/invitations', { email: 'sophie@protask.dev' }, alexToken)
     const { status, data } = await post('/boards/' + boardId + '/invitations', { email: 'sophie@protask.dev' }, alexToken)
     expect(status).toBe(400)
-    expect(data.error).toContain('Déjà invité')
+    expect(data.error).toContain('en attente')
   })
 
   it('accepte une invitation', async () => {
@@ -501,7 +501,8 @@ describe('Invitations', () => {
   it('wrong user ne peut pas répondre', async () => {
     await post('/boards/' + boardId + '/invitations', { email: 'sophie@protask.dev' }, alexToken)
     const { data: invs } = await get('/boards/' + boardId + '/invitations', alexToken)
-    const { status, data } = await patch('/invitations/' + invs[0].id, { status: 'accepted' }, alexToken)
+    const { data: marc } = await post('/auth/login', { email: 'marc@protask.dev', password: 'pass123' })
+    const { status, data } = await patch('/invitations/' + invs[0].id, { status: 'accepted' }, marc.token)
     expect(status).toBe(403)
     expect(data.error).toContain('pas répondre')
   })
