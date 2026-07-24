@@ -4,16 +4,16 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] Serveur Hono démarre sur un port configurable
-- [ ] mockData pré-chargé (users, boards, columns, cards, labels, comments, invitations)
-- [ ] `POST /api/_reset` remet toutes les données à l'état initial
-- [ ] `POST /api/auth/register` crée un utilisateur, retourne token + user
-- [ ] `POST /api/auth/login` authentifie, retourne token + user
-- [ ] `POST /api/auth/logout` (simple réponse 200)
-- [ ] Auth protégée : routes sans token valide retournent 401
-- [ ] `client.js` expose `register()`, `login()`, `logout()` avec les mêmes signatures que l'ancien `demoApi`
-- [ ] Tests e2e auth : register succès, register doublon échoue, login succès, login mauvais mdp échoue
-- [ ] `beforeEach` appelle `_reset`
-- [ ] `API_URL` variable d'environnement (défaut `http://localhost:3001/api`)
+- [x] Serveur Hono démarre sur un port configurable
+- [x] mockData pré-chargé (users, boards, columns, cards, labels, comments, invitations)
+- [x] `POST /api/_reset` remet toutes les données à l'état initial
+- [x] `POST /api/auth/register` crée un utilisateur, retourne token + user
+- [x] `POST /api/auth/login` authentifie, retourne token + user
+- [x] `POST /api/auth/logout` (simple réponse 200)
+- [ ] Auth protégée : routes sans token valide retournent 401 (reporté — pas encore de routes protégées)
+- [x] `client.js` expose `register()`, `login()`, `logout()` avec les mêmes signatures que l'ancien `demoApi`
+- [x] Tests e2e auth : register succès, register doublon échoue, login succès, login mauvais mdp échoue
+- [x] `beforeEach` appelle `_reset`
+- [x] `API_URL` variable d'environnement (défaut `http://localhost:3001/api`)
