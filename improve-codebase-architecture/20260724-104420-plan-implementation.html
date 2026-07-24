@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Plan d'implémentation — projects-ideas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .step { counter-increment: step; }
+    .step::before { content: counter(step) ". "; }
+    .step-list { counter-reset: step; }
+    .badge-strong { background: #059669; color: white; }
+    .badge-explore { background: #d97706; color: white; }
+    .badge-speculative { background: #64748b; color: white; }
+  </style>
+</head>
+<body class="bg-stone-50 text-slate-900 font-sans">
+  <main class="max-w-5xl mx-auto px-6 py-12 space-y-12">
+
+    <header class="space-y-4">
+      <h1 class="text-3xl font-serif font-bold tracking-tight">Plan d'implémentation</h1>
+      <p class="text-slate-500">Étapes détaillées pour chaque candidat, avec priorité et effort estimé</p>
+      <hr class="border-slate-200">
+    </header>
+
+    <!-- Phase 1 -->
+    <section class="bg-white rounded-xl border border-slate-200 p-6 border-l-4 border-l-red-500">
+      <h2 class="text-xl font-serif font-bold mb-2">Phase 1: Fondation <span class="text-sm text-slate-400 font-normal">(~1h)</span></h2>
+      <p class="text-sm text-slate-500 mb-4">Infrastructure commune et génération d'IDs</p>
+
+      <div class="space-y-4">
+        <div class="bg-slate-50 rounded-lg p-4 border">
+          <h3 class="font-bold">1.1 Créer shared/mock-base.js</h3>
+          <pre class="bg-white text-xs p-3 border rounded mt-2 overflow-x-auto">
+// shared/mock-base.js
+const delay = (ms = 80) => new Promise(r => setTimeout(r, ms));
+
+// ID generation (monotonically increasing)
+let _nextId = 100;
+function nextId() { return _nextId++; }
+function resetIdCounter() { _nextId = 100; }
+
+// Auth state
+let _currentUser = null;
+function getCurrentUser() { return _currentUser; }
+function setCurrentUser(u) { _currentUser = u; }
+function resetMockData() { _currentUser = null; resetIdCounter(); }
+
+// Helpers
+function _ensureAuth() { if (!_currentUser) throw new Error('Non authentifié.'); }
+function stripPassword(user) { const { password, ...rest } = user; return rest; }
+
+// Test runner
+function createTestRunner(name) {
+  const results = [];
+  const ok = (name) => { results.push({ name, passed: true }); console.log('  ✅', name); };
+  const fail = (name, err) => { results.push({ name, passed: false, error: err }); console.log('  ❌', name, '-', err); };
+  return { results, ok, fail, report: () => {
+    const passed = results.filter(r => r.passed).length;
+    const failed = results.filter(r => !r.passed).length;
+    console.log(`\n📊 ${name}: ${passed} ✅ / ${failed} ❌ / ${results.length} total`);
+    return { total: results.length, passed, failed, results };
+  }};
+}
+          </pre>
+        </div>
+
+        <div class="bg-slate-50 rounded-lg p-4 border">
+          <h3 class="font-bold">1.2 Modifier protask/demo-api.js</h3>
+          <pre class="bg-white text-xs p-3 border rounded mt-2 overflow-x-auto">
+// Remplacer:
+const delay = (ms = 80) => new Promise(r => setTimeout(r, ms));
+let _currentUser = null;
+let _authToken = null;
+function getCurrentUser() { return _currentUser; }
+function setCurrentUser(u) { _currentUser = u; _authToken = u ? 'token-' + u.id : null; }
+function resetMockData() { _currentUser = null; _authToken = null; }
+function _ensureAuth() { if (!_currentUser) throw new Error('Non authentifié.'); }
+// mockData.xxx.length + 1 (x8 occurrences)
+
+// Par:
+&lt;script src="../shared/mock-base.js"&gt;&lt;/script&gt;
+// Supprimer delay, _currentUser, getCurrentUser, setCurrentUser, resetMockData, _ensureAuth
+// Remplacer mockData.X.length+1 → nextId()
+          </pre>
+        </div>
+
+        <div class="bg-slate-50 rounded-lg p-4 border">
+          <h3 class="font-bold">1.3 Modifier shopflow/demo-api.js</h3>
+          <p class="text-sm text-slate-600 mt-2">Même transformation que protask. Conserver _cartItems comme spécificité shopflow.</p>
+        </div>
+
+        <div class="bg-slate-50 rounded-lg p-4 border">
+          <h3 class="font-bold">1.4 Mettre à jour les templates</h3>
+          <p class="text-sm text-slate-600 mt-2">Vérifier que les chemins d'import fonctionnent avec la nouvelle structure. Tester chaque template.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Phase 2 -->
+    <section class="bg-white rounded-xl border border-slate-200 p-6 border-l-4 border-l-amber-500">
+      <h2 class="text-xl font-serif font-bold mb-2">Phase 2: Corrections rapides <span class="text-sm text-slate-400 font-normal">(~30 min)</span></h2>
+      <p class="text-sm text-slate-500 mb-4">Bug panier, auth guards, isolation des tests</p>
+
+      <div class="space-y-4">
+        <div class="bg-slate-50 rounded-lg p-4 border">
+          <h3 class="font-bold">2.1 Bug panier ShopFlow</h3>
+          <p class="text-sm text-slate-600 mt-2">shopflow/templates/neo-brutalist/index.html - Supprimer <code class="bg-slate-200 px-1 rounded">let cart = [];</code> (ligne 73), modifier <code class="bg-slate-200 px-1 rounded">updateUI()</code> pour utiliser <code class="bg-slate-200 px-1 rounded">api.getCart()</code></p>
+        </div>
+
+        <div class="bg-slate-50 rounded-lg p-4 border">
+          <h3 class="font-bold">2.2 Auth guards ProTask</h3>
+          <p class="text-sm text-slate-600 mt-2">protask/demo-api.js - Ajouter <code class="bg-slate-200 px-1 rounded">_ensureAuth()</code> dans: updateBoard, getColumns, updateColumn, updateCard</p>
+        </div>
+
+        <div class="bg-slate-50 rounded-lg p-4 border">
+          <h3 class="font-bold">2.3 Isolation des tests</h3>
+          <p class="text-sm text-slate-600 mt-2">Ajouter <code class="bg-slate-200 px-1 rounded">resetMockData()</code> au début de chaque testApi(). Ajouter <code class="bg-slate-200 px-1 rounded">resetIdCounter()</code> aussi.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Phase 3 -->
+    <section class="bg-white rounded-xl border border-slate-200 p-6 border-l-4 border-l-amber-500">
+      <h2 class="text-xl font-serif font-bold mb-2">Phase 3: Refonte majeure <span class="text-sm text-slate-400 font-normal">(~2-3h)</span></h2>
+      <p class="text-sm text-slate-500 mb-4">Template ShopFlow</p>
+
+      <div class="space-y-4">
+        <div class="bg-slate-50 rounded-lg p-4 border">
+          <h3 class="font-bold">3.1 Renommer les fonctions</h3>
+          <table class="w-full text-sm mt-2">
+            <thead><tr class="border-b"><th class="text-left py-1">Avant</th><th class="text-left py-1">Après</th></tr></thead>
+            <tbody class="divide-y font-mono text-xs">
+              <tr><td class="py-1">pc(p)</td><td class="py-1">renderProductCard(product)</td></tr>
+              <tr><td class="py-1">co()</td><td class="py-1">handleCheckout()</td></tr>
+              <tr><td class="py-1">cb()</td><td class="py-1">handleClaimBonus()</td></tr>
+              <tr><td class="py-1">tr(uid,rl)</td><td class="py-1">toggleUserRole(userId, role)</td></tr>
+              <tr><td class="py-1">ac()</td><td class="py-1">handleAddCategory()</td></tr>
+              <tr><td class="py-1">uq(iid,c)</td><td class="py-1">updateCartQuantity(itemId, change)</td></tr>
+              <tr><td class="py-1">rci(iid)</td><td class="py-1">removeCartItem(itemId)</td></tr>
+              <tr><td class="py-1">subR(pid)</td><td class="py-1">submitReview(productId)</td></tr>
+              <tr><td class="py-1">addF(pid)</td><td class="py-1">addFavorite(productId)</td></tr>
+              <tr><td class="py-1">addC(pid)</td><td class="py-1">addToCart(productId)</td></tr>
+              <tr><td class="py-1">filt()</td><td class="py-1">filterProducts()</td></tr>
+              <tr><td class="py-1">rst()</td><td class="py-1">resetFilters()</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="bg-slate-50 rounded-lg p-4 border">
+          <h3 class="font-bold">3.2 Remplacer alert() par toasts</h3>
+          <pre class="bg-white text-xs p-3 border rounded mt-2">
+function showToast(message, type = 'info') {
+  const toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed;bottom:24px;right:24px;padding:12px 24px;...';
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+// shopflow: ~17 alert() à remplacer
+          </pre>
+        </div>
+
+        <div class="bg-slate-50 rounded-lg p-4 border">
+          <h3 class="font-bold">3.3 Ajouter loading states</h3>
+          <pre class="bg-white text-xs p-3 border rounded mt-2">
+function showLoading(containerId) {
+  document.getElementById(containerId).innerHTML = '&lt;p&gt;Chargement...&lt;/p&gt;';
+}
+          </pre>
+        </div>
+
+        <div class="bg-slate-50 rounded-lg p-4 border">
+          <h3 class="font-bold">3.4 Formater le code</h3>
+          <p class="text-sm text-slate-600 mt-2">Séparer les fonctions sur plusieurs lignes, indenter correctement, ajouter des commentaires de section. Objectif: ~400 lignes lisibles.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Phase 4 -->
+    <section class="bg-white rounded-xl border border-slate-200 p-6 border-l-4 border-l-blue-400">
+      <h2 class="text-xl font-serif font-bold mb-2">Phase 4: Améliorations <span class="text-sm text-slate-400 font-normal">(~1h)</span></h2>
+      <p class="text-sm text-slate-500 mb-4">Auth unifié, sécurité XSS</p>
+
+      <div class="space-y-4">
+        <div class="bg-slate-50 rounded-lg p-4 border">
+          <h3 class="font-bold">4.1 Auth unifié</h3>
+          <p class="text-sm text-slate-600 mt-2">Supprimer les variables locales <code class="bg-slate-200 px-1 rounded">currentUser</code> dans les templates. Utiliser <code class="bg-slate-200 px-1 rounded">getCurrentUser()</code> à la place.</p>
+        </div>
+
+        <div class="bg-slate-50 rounded-lg p-4 border">
+          <h3 class="font-bold">4.2 Sécurité XSS</h3>
+          <pre class="bg-white text-xs p-3 border rounded mt-2">
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+          </pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Suivi progression -->
+    <section class="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl p-8 text-white">
+      <h2 class="text-2xl font-serif font-bold mb-4">Suivi de progression</h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white/10 rounded-lg p-4 text-center">
+          <div class="text-3xl font-bold">0/8</div>
+          <div class="text-xs text-slate-300 mt-1">Candidats implémentés</div>
+        </div>
+        <div class="bg-white/10 rounded-lg p-4 text-center">
+          <div class="text-3xl font-bold">0/4</div>
+          <div class="text-xs text-slate-300 mt-1">Phases complétées</div>
+        </div>
+        <div class="bg-white/10 rounded-lg p-4 text-center">
+          <div class="text-3xl font-bold">0h</div>
+          <div class="text-xs text-slate-300 mt-1">Temps investi</div>
+        </div>
+        <div class="bg-white/10 rounded-lg p-4 text-center">
+          <div class="text-3xl font-bold">~6h</div>
+          <div class="text-xs text-slate-300 mt-1">Estimation restante</div>
+        </div>
+      </div>
+      <p class="text-xs text-slate-400 mt-4">Dernière mise à jour: 24 juillet 2026</p>
+    </section>
+
+  </main>
+</body>
+</html>

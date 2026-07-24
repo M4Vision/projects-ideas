@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Architecture Review — projects-ideas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+  </script>
+  <style>
+    .seam { stroke-dasharray: 4 4; }
+    .leak { stroke: #dc2626; }
+    .deep { background: linear-gradient(135deg, #0f172a, #1e293b); }
+    .shallow { background: linear-gradient(135deg, #f8fafc, #e2e8f0); }
+    .badge-strong { background: #059669; color: white; }
+    .badge-explore { background: #d97706; color: white; }
+    .badge-speculative { background: #64748b; color: white; }
+  </style>
+</head>
+<body class="bg-stone-50 text-slate-900 font-sans">
+  <main class="max-w-6xl mx-auto px-6 py-12 space-y-12">
+
+    <header class="space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-serif font-bold tracking-tight">Rapport d'Architecture</h1>
+          <p class="text-slate-500 text-sm mt-1">projects-ideas • 24 juillet 2026</p>
+        </div>
+      </div>
+      <hr class="border-slate-200">
+    </header>
+
+    <section id="candidates" class="space-y-10">
+
+      <!-- Candidate 1 -->
+      <article class="bg-white rounded-xl border border-slate-200 p-6">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-serif font-bold">Extraire l'infrastructure mock commune</h2>
+            <p class="text-slate-500 text-sm mt-1">protask/demo-api.js • shopflow/demo-api.js</p>
+          </div>
+          <span class="badge-strong text-xs px-3 py-1 rounded-full font-medium">Strong</span>
+        </div>
+        <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+          <div>
+            <span class="font-mono text-xs text-slate-500">FICHIERS</span>
+            <ul class="font-mono text-xs mt-1 space-y-1">
+              <li>protask/demo-api.js</li>
+              <li>shopflow/demo-api.js</li>
+              <li>→ shared/mock-base.js</li>
+            </ul>
+          </div>
+          <div>
+            <span class="font-mono text-xs text-slate-500">PROBLÈME</span>
+            <p class="text-sm mt-1">delay(), auth state, ID gen, strip pwd, testApi sont dupliqués mot pour mot entre les deux projets.</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">AVANT</h3>
+            <div class="space-y-2">
+              <div class="border-2 border-slate-400 bg-slate-100 p-3 text-center text-xs uppercase">protask/demo-api.js</div>
+              <div class="text-center text-xs text-slate-400">↓ duplique ↓</div>
+              <div class="grid grid-cols-3 gap-1 text-xs">
+                <div class="bg-white border border-slate-200 p-1 text-center">delay()</div><div class="bg-white border border-slate-200 p-1 text-center">auth</div><div class="bg-white border border-slate-200 p-1 text-center">ID gen</div>
+                <div class="bg-white border border-slate-200 p-1 text-center">stripPwd</div><div class="bg-white border border-slate-200 p-1 text-center">testApi</div><div class="bg-white border border-slate-200 p-1 text-center">finders</div>
+              </div>
+              <div class="border-2 border-slate-400 bg-slate-100 p-3 text-center text-xs uppercase">shopflow/demo-api.js</div>
+              <div class="text-center text-xs text-slate-400">↓ duplique ↓</div>
+              <div class="grid grid-cols-3 gap-1 text-xs">
+                <div class="bg-white border border-slate-200 p-1 text-center">delay()</div><div class="bg-white border border-slate-200 p-1 text-center">auth</div><div class="bg-white border border-slate-200 p-1 text-center">ID gen</div>
+                <div class="bg-white border border-slate-200 p-1 text-center">stripPwd</div><div class="bg-white border border-slate-200 p-1 text-center">testApi</div><div class="bg-white border border-slate-200 p-1 text-center">finders</div>
+              </div>
+            </div>
+          </div>
+          <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">APRÈS</h3>
+            <div class="space-y-2">
+              <div class="border-2 border-slate-900 bg-slate-900 text-white p-3 text-center text-xs uppercase font-bold">shared/mock-base.js</div>
+              <div class="text-center text-xs text-slate-400">↓ fournit ↓</div>
+              <div class="grid grid-cols-3 gap-1 text-xs">
+                <div class="bg-slate-800 text-white p-1 text-center">delay()</div><div class="bg-slate-800 text-white p-1 text-center">auth</div><div class="bg-slate-800 text-white p-1 text-center">nextId()</div>
+                <div class="bg-slate-800 text-white p-1 text-center">stripPwd</div><div class="bg-slate-800 text-white p-1 text-center">testRunner</div><div class="bg-slate-800 text-white p-1 text-center">finders</div>
+              </div>
+              <div class="flex justify-center gap-4 mt-2">
+                <div class="border-2 border-slate-400 bg-slate-100 p-2 text-center text-xs uppercase" style="width:120px">protask/demo-api.js</div>
+                <div class="border-2 border-slate-400 bg-slate-100 p-2 text-center text-xs uppercase" style="width:120px">shopflow/demo-api.js</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+          <h3 class="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-2">GAINS</h3>
+          <ul class="text-sm space-y-1">
+            <li>• <strong>Locality:</strong> bugs d'infrastructure se fixent en un seul endroit</li>
+            <li>• <strong>Leverage:</strong> 1 interface mock-base, N projets bénéficient</li>
+            <li>• <strong>Suppression:</strong> ~60 lignes dupliquées éliminées</li>
+          </ul>
+        </div>
+        <details class="mt-3">
+          <summary class="text-sm font-bold text-slate-500 cursor-pointer hover:text-slate-700">Étapes d'implémentation</summary>
+          <div class="mt-2 space-y-2 text-sm">
+            <div class="bg-slate-50 rounded p-3">1. Créer <code class="bg-slate-200 px-1 rounded">shared/mock-base.js</code> avec delay(), state auth, nextId(), stripPassword(), createTestRunner()</div>
+            <div class="bg-slate-50 rounded p-3">2. Modifier protask/demo-api.js : importer mock-base, supprimer les fonctions dupliquées</div>
+            <div class="bg-slate-50 rounded p-3">3. Modifier shopflow/demo-api.js : même processus</div>
+            <div class="bg-slate-50 rounded p-3">4. Mettre à jour les imports dans les templates</div>
+            <div class="bg-slate-50 rounded p-3">5. Exécuter testApi() dans chaque projet — vérifier 0 échec</div>
+          </div>
+        </details>
+      </article>
+
+      <!-- Candidate 2 -->
+      <article class="bg-white rounded-xl border border-slate-200 p-6">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-serif font-bold">Corriger la génération d'IDs fragile</h2>
+            <p class="text-slate-500 text-sm mt-1">protask/demo-api.js • shopflow/demo-api.js</p>
+          </div>
+          <span class="badge-strong text-xs px-3 py-1 rounded-full font-medium">Strong</span>
+        </div>
+        <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+          <div><span class="font-mono text-xs text-slate-500">FICHIERS</span><ul class="font-mono text-xs mt-1"><li>protask/demo-api.js (x8 occurrences)</li><li>shopflow/demo-api.js (x9 occurrences)</li></ul></div>
+          <div><span class="font-mono text-xs text-slate-500">PROBLÈME</span><p class="text-sm mt-1">mockData.xxx.length + 1 casse après suppressions (collision d'IDs).</p></div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">AVANT</h3>
+            <code class="block bg-white text-xs p-2 border rounded">id: mockData.users.length + 1<br>// [1,2,3] → delete 2 → [1,3] → create → id=3 → COLLISION</code>
+          </div>
+          <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">APRÈS</h3>
+            <code class="block bg-white text-xs p-2 border rounded">let _nextId = 100;<br>function nextId() { return _nextId++; }<br>// Jamais de collision</code>
+          </div>
+        </div>
+        <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+          <h3 class="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-2">GAINS</h3>
+          <ul class="text-sm space-y-1">
+            <li>• <strong>Locality:</strong> un seul point nextId()</li>
+            <li>• <strong>Fiabilité:</strong> les tests ne cassent plus après suppressions</li>
+          </ul>
+        </div>
+        <details class="mt-3">
+          <summary class="text-sm font-bold text-slate-500 cursor-pointer hover:text-slate-700">Étapes d'implémentation</summary>
+          <div class="mt-2 space-y-2 text-sm">
+            <div class="bg-slate-50 rounded p-3">1. Ajouter nextId() dans shared/mock-base.js</div>
+            <div class="bg-slate-50 rounded p-3">2. Remplacer chaque mockData.X.length + 1 par nextId()</div>
+            <div class="bg-slate-50 rounded p-3">3. Ajouter resetIdCounter() dans resetMockData()</div>
+          </div>
+        </details>
+      </article>
+
+      <!-- Candidate 3 -->
+      <article class="bg-white rounded-xl border border-slate-200 p-6">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-serif font-bold">Refondre le template ShopFlow (lisibilité)</h2>
+            <p class="text-slate-500 text-sm mt-1">shopflow/templates/neo-brutalist/index.html</p>
+          </div>
+          <span class="badge-strong text-xs px-3 py-1 rounded-full font-medium">Strong</span>
+        </div>
+        <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+          <div><span class="font-mono text-xs text-slate-500">FICHIERS</span><ul class="font-mono text-xs mt-1"><li>shopflow/templates/neo-brutalist/index.html</li></ul></div>
+          <div><span class="font-mono text-xs text-slate-500">PROBLÈME</span><p class="text-sm mt-1">140 lignes comprimées, noms à 1 lettre (pc, co, cb, tr, ac), template literals monolithiques, alert() au lieu de toasts.</p></div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">AVANT</h3>
+            <code class="block bg-white text-xs p-2 border rounded overflow-hidden">function pc(p){const s=p.stockStatus;...}<br>async function co(){try{const o=...}<br>async function cb(){try{const r=...}<br>// 140 lignes, 10 pages, illisible</code>
+          </div>
+          <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">APRÈS</h3>
+            <code class="block bg-white text-xs p-2 border rounded overflow-hidden">function renderProductCard(product) {...}<br>async function handleCheckout() {...}<br>async function handleClaimBonus() {...}<br>// ~400 lignes, bien structuré</code>
+          </div>
+        </div>
+        <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+          <h3 class="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-2">GAINS</h3>
+          <ul class="text-sm space-y-1">
+            <li>• <strong>Locality:</strong> les bugs se trouvent et se fixent facilement</li>
+            <li>• <strong>Pédagogie:</strong> code lisible pour l'apprentissage</li>
+            <li>• <strong>Cohérence:</strong> même qualité que le template ProTask</li>
+          </ul>
+        </div>
+        <details class="mt-3">
+          <summary class="text-sm font-bold text-slate-500 cursor-pointer hover:text-slate-700">Étapes d'implémentation</summary>
+          <div class="mt-2 space-y-2 text-sm">
+            <div class="bg-slate-50 rounded p-3">1. Renommer toutes les fonctions: pc→renderProductCard, co→handleCheckout, cb→handleClaimBonus, etc.</div>
+            <div class="bg-slate-50 rounded p-3">2. Remplacer alert() par un système de toast notifications</div>
+            <div class="bg-slate-50 rounded p-3">3. Ajouter les loading states (showLoading/hideLoading)</div>
+            <div class="bg-slate-50 rounded p-3">4. Formater le code: multiligne, indentation, commentaires de section</div>
+            <div class="bg-slate-50 rounded p-3">5. Corriger le bug du panier (voir candidat 4)</div>
+          </div>
+        </details>
+      </article>
+
+      <!-- Candidate 4 -->
+      <article class="bg-white rounded-xl border border-slate-200 p-6">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-serif font-bold">Corriger le bug du panier ShopFlow</h2>
+            <p class="text-slate-500 text-sm mt-1">shopflow/templates/neo-brutalist/index.html:73 • shopflow/demo-api.js:77</p>
+          </div>
+          <span class="badge-strong text-xs px-3 py-1 rounded-full font-medium">Strong</span>
+        </div>
+        <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+          <div><span class="font-mono text-xs text-slate-500">PROBLÈME</span><p class="text-sm mt-1">Double état du panier: template a let cart=[] (vide) et API a _cartItems. Le badge du panier ne se met jamais à jour.</p></div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">AVANT</h3>
+            <code class="block bg-white text-xs p-2 border rounded">let cart = []; // TOUJOURS VIDE<br>cart.reduce((s,i)=>s+i.qty,0) // → 0</code>
+          </div>
+          <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">APRÈS</h3>
+            <code class="block bg-white text-xs p-2 border rounded">const cart = await api.getCart();<br>cart.reduce((s,i)=>s+i.qty,0) // OK</code>
+          </div>
+        </div>
+        <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+          <h3 class="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-2">GAINS</h3>
+          <ul class="text-sm space-y-1">
+            <li>• <strong>Locality:</strong> état du panier en un seul endroit (l'API)</li>
+            <li>• <strong>Fiabilité:</strong> le badge du panier fonctionne réellement</li>
+          </ul>
+        </div>
+        <details class="mt-3">
+          <summary class="text-sm font-bold text-slate-500 cursor-pointer hover:text-slate-700">Étapes</summary>
+          <div class="mt-2 text-sm bg-slate-50 rounded p-3">Supprimer let cart=[], modifier updateUI() pour utiliser api.getCart()</div>
+        </details>
+      </article>
+
+      <!-- Candidate 5 -->
+      <article class="bg-white rounded-xl border border-slate-200 p-6">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-serif font-bold">Ajouter les auth guards manquants</h2>
+            <p class="text-slate-500 text-sm mt-1">protask/demo-api.js:144,158,166,202</p>
+          </div>
+          <span class="badge-explore text-xs px-3 py-1 rounded-full font-medium">Worth exploring</span>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">MANQUANTS</h3>
+            <code class="block bg-white text-xs p-2 border rounded">updateBoard() - pas de guard<br>getColumns() - pas de guard<br>updateColumn() - pas de guard<br>updateCard() - pas de guard</code>
+          </div>
+          <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">CORRECTION</h3>
+            <code class="block bg-white text-xs p-2 border rounded">updateBoard(id, data) {<br>  _ensureAuth(); // ← ajouter<br>  ...<br>}</code>
+          </div>
+        </div>
+        <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+          <h3 class="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-2">GAINS</h3>
+          <ul class="text-sm space-y-1">
+            <li>• <strong>Cohérence:</strong> aligné avec les exigences du PRD</li>
+            <li>• <strong>Sécurité:</strong> pas de modification sans auth</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- Candidate 6 -->
+      <article class="bg-white rounded-xl border border-slate-200 p-6">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-serif font-bold">Améliorer l'isolation des tests</h2>
+            <p class="text-slate-500 text-sm mt-1">protask/demo-api.js:224 • shopflow/demo-api.js:144</p>
+          </div>
+          <span class="badge-explore text-xs px-3 py-1 rounded-full font-medium">Worth exploring</span>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">AVANT</h3>
+            <code class="block bg-white text-xs p-2 border rounded">async function testApi() {<br>  // pas de reset<br>  // résultats changent à chaque run<br>}</code>
+          </div>
+          <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">APRÈS</h3>
+            <code class="block bg-white text-xs p-2 border rounded">async function testApi() {<br>  resetMockData(); // ← état frais<br>  resetIdCounter();<br>  // résultats identiques à chaque run<br>}</code>
+          </div>
+        </div>
+        <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+          <h3 class="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-2">GAINS</h3>
+          <ul class="text-sm space-y-1">
+            <li>• <strong>Fiabilité:</strong> tests déterministes</li>
+            <li>• <strong>Reproductibilité:</strong> exécuter 2x = même résultat</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- Candidate 7 -->
+      <article class="bg-white rounded-xl border border-slate-200 p-6">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-serif font-bold">Unifier l'état d'authentification</h2>
+            <p class="text-slate-500 text-sm mt-1">protask/index.html • shopflow/index.html</p>
+          </div>
+          <span class="badge-explore text-xs px-3 py-1 rounded-full font-medium">Worth exploring</span>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">AVANT</h3>
+            <code class="block bg-white text-xs p-2 border rounded">// template:<br>let currentUser = getCurrentUser();<br>// API:<br>let _currentUser = null;<br>// Risque de désynchronisation</code>
+          </div>
+          <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">APRÈS</h3>
+            <code class="block bg-white text-xs p-2 border rounded">// template utilise getCurrentUser()<br>// Pas de variable locale<br>// Source unique de vérité</code>
+          </div>
+        </div>
+        <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+          <h3 class="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-2">GAINS</h3>
+          <ul class="text-sm space-y-1">
+            <li>• <strong>Locality:</strong> un seul endroit pour l'état d'auth</li>
+            <li>• <strong>Fiabilité:</strong> pas de désynchronisation</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- Candidate 8 -->
+      <article class="bg-white rounded-xl border border-slate-200 p-6">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-serif font-bold">Sécuriser l'injection HTML (XSS)</h2>
+            <p class="text-slate-500 text-sm mt-1">protask/index.html • shopflow/index.html</p>
+          </div>
+          <span class="badge-speculative text-xs px-3 py-1 rounded-full font-medium">Speculative</span>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">AVANT</h3>
+            <code class="block bg-white text-xs p-2 border rounded">grid.innerHTML = boards.map(b =><br>  `&lt;div&gt;${b.title}&lt;/div&gt;`<br>).join(''); // XSS possible</code>
+          </div>
+          <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">APRÈS</h3>
+            <code class="block bg-white text-xs p-2 border rounded">function escapeHtml(str) {<br>  return str.replace(/[&<>]/g, ...);<br>}<br>`${escapeHtml(b.title)}` // Sécurisé</code>
+          </div>
+        </div>
+        <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+          <h3 class="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-2">GAINS</h3>
+          <ul class="text-sm space-y-1">
+            <li>• <strong>Sécurité:</strong> pas de vulnérabilité XSS</li>
+            <li>• <strong>Pédagogie:</strong> montre les bonnes pratiques</li>
+          </ul>
+        </div>
+      </article>
+    </section>
+
+    <!-- Top Recommendation -->
+    <section class="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl p-8 text-white">
+      <h2 class="text-2xl font-serif font-bold mb-4">Recommandation principale</h2>
+      <div class="bg-white/10 rounded-lg p-6">
+        <h3 class="text-xl font-bold mb-2">Extraire l'infrastructure mock commune</h3>
+        <p class="text-slate-300">C'est le candidat avec le plus fort <strong>leverage</strong>. En créant un shared/mock-base.js, on élimine ~60 lignes dupliquées, on centralise la génération d'IDs (corrompue), et on crée un point d'entrée naturel pour améliorer les tests.</p>
+        <div class="mt-4 flex gap-4">
+          <div class="bg-white/5 rounded-lg px-4 py-2"><div class="text-2xl font-bold">8</div><div class="text-xs text-slate-400">candidats</div></div>
+          <div class="bg-white/5 rounded-lg px-4 py-2"><div class="text-2xl font-bold">3</div><div class="text-xs text-slate-400">Strong</div></div>
+          <div class="bg-white/5 rounded-lg px-4 py-2"><div class="text-2xl font-bold">~6h</div><div class="text-xs text-slate-400">effort total</div></div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="text-center text-xs text-slate-400 pb-8">
+      Dernière mise à jour: 24 juillet 2026 • Prochaine révision recommandée: après implémentation des 8 candidats
+    </footer>
+  </main>
+</body>
+</html>
