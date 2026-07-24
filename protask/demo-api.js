@@ -116,7 +116,11 @@ const demoApi = {
     _ensureAuth();
     return mockData.boards
       .filter(b => b.ownerId === _currentUser.id || (mockData.boardMembers[b.id] || []).includes(_currentUser.id))
-      .map(b => ({ ...b, memberCount: (mockData.boardMembers[b.id] || []).length + 1, cardCount: mockData.cards.filter(c => mockData.columns.filter(col => col.boardId === b.id).some(col => col.id === c.columnId)).length }));
+      .map(b => ({
+        ...b,
+        members: [mockData.users.find(u => u.id === b.ownerId), ...((mockData.boardMembers[b.id] || []).map(id => _findUser(id)))].filter(Boolean).map(m => ({ ...m, password: undefined })),
+        cardCount: mockData.cards.filter(c => mockData.columns.filter(col => col.boardId === b.id).some(col => col.id === c.columnId)).length,
+      }));
   },
   async createBoard(data) {
     await delay();
