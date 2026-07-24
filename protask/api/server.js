@@ -415,4 +415,79 @@ app.delete('/api/comments/:id', (c) => {
   return c.body(null, 204)
 })
 
+// Invitations
+app.post('/api/boards/:id/invitations', async (c) => {
+  try {
+    const board = findBoard(parseInt(c.req.param('id')))
+    const user = c.get('currentUser')
+    if (board.ownerId !== user.id) return c.json({ error: 'Seul le propriétaire peut inviter.' }, 403)
+    const { email } = await c.req.json()
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return c.json({ error: 'Email invalide.' }, 400)
+    const invited = mockData.users.find(u => u.email === email)
+    if (!invited) return c.json({ error: 'Utilisateur inexistant.' }, 404)
+    if ((mockData.boardMembers[board.id] || []).includes(invited.id)) return c.json({ error: 'Déjà membre.' }, 400)
+    if (mockData.invitations.find(i => i.boardId === board.id && i.email === email && i.status === 'pending')) return c.json({ error: 'Déjà invité.' }, 400)
+    const inv = { id: mockData.invitations.length + 1, boardId: board.id, email, invitedById: user.id, status: 'pending', createdAt: new Date().toISOString() }
+    mockData.invitations.push(inv)
+    return c.json(inv, 201)
+  } catch (e) {
+    return c.json({ error: e.message }, 404)
+  }
+})
+
+app.get('/api/boards/:id/invitations', (c) => {
+  try {
+    findBoard(parseInt(c.req.param('id')))
+    const id = parseInt(c.req.param('id'))
+    return c.json(mockData.invitations.filter(i => i.boardId === id))
+  } catch (e) {
+    return c.json({ error: e.message }, 404)
+  }
+})
+
+app.patch('/api/invitations/:id', async (c) => {
+  const id = parseInt(c.req.param('id'))
+  const inv = mockData.invitations.find(i => i.id === id)
+  if (!inv) return c.json({ error: 'Invitation introuvable.' }, 404)
+  const user = c.get('currentUser')
+  if (user.email !== inv.email) return c.json({ error: 'Vous ne pouvez pas répondre à cette invitation.' }, 403)
+  if (inv.status !== 'pending') return c.json({ error: 'Cette invitation n\'est plus en attente.' }, 400)
+  const { status } = await c.req.json()
+  if (!['accepted', 'declined'].includes(status)) return c.json({ error: 'Statut invalide.' }, 400)
+  inv.status = status
+  if (status === 'accepted') {
+    if (!mockData.boardMembers[inv.boardId]) mockData.boardMembers[inv.boardId] = []
+    const invited = mockData.users.find(u => u.email === inv.email)
+    if (invited && !mockData.boardMembers[inv.boardId].includes(invited.id)) mockData.boardMembers[inv.boardId].push(invited.id)
+  }
+  return c.json(inv)
+})
+
+app.delete('/api/invitations/:id', (c) => {
+  const id = parseInt(c.req.param('id'))
+  const inv = mockData.invitations.find(i => i.id === id)
+  if (!inv) return c.json({ error: 'Invitation introuvable.' }, 404)
+  const user = c.get('currentUser')
+  const board = mockData.boards.find(b => b.id === inv.boardId)
+  if (!board || board.ownerId !== user.id) return c.json({ error: 'Seul le propriétaire peut annuler.' }, 403)
+  if (inv.status !== 'pending') return c.json({ error: 'Seules les invitations en attente peuvent être annulées.' }, 400)
+  mockData.invitations = mockData.invitations.filter(i => i.id !== id)
+  return c.body(null, 204)
+})
+
+app.delete('/api/boards/:id/members/:userId', (c) => {
+  try {
+    const board = findBoard(parseInt(c.req.param('id')))
+    const user = c.get('currentUser')
+    if (board.ownerId !== user.id) return c.json({ error: 'Seul le propriétaire peut retirer un membre.' }, 403)
+    const memberId = parseInt(c.req.param('userId'))
+    if (memberId === user.id) return c.json({ error: 'Vous ne pouvez pas vous retirer vous-même.' }, 400)
+    if (!mockData.boardMembers[board.id]) mockData.boardMembers[board.id] = []
+    mockData.boardMembers[board.id] = mockData.boardMembers[board.id].filter(id => id !== memberId)
+    return c.body(null, 204)
+  } catch (e) {
+    return c.json({ error: e.message }, 404)
+  }
+})
+
 export default app

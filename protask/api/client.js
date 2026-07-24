@@ -138,6 +138,30 @@ const demoApi = {
     if (!res.ok) throw new Error((await res.json()).error || 'Erreur ' + res.status)
     return null
   },
+
+  async inviteMember(boardId, email) {
+    return request('POST', '/boards/' + boardId + '/invitations', { email })
+  },
+
+  async getInvitations(boardId) {
+    return request('GET', '/boards/' + boardId + '/invitations')
+  },
+
+  async respondToInvitation(id, status) {
+    return request('PATCH', '/invitations/' + id, { status })
+  },
+
+  async cancelInvitation(id) {
+    const res = await fetch(API_URL + '/invitations/' + id, { method: 'DELETE', headers: headers() })
+    if (!res.ok) throw new Error((await res.json()).error || 'Erreur ' + res.status)
+    return null
+  },
+
+  async removeMember(boardId, userId) {
+    const res = await fetch(API_URL + '/boards/' + boardId + '/members/' + userId, { method: 'DELETE', headers: headers() })
+    if (!res.ok) throw new Error((await res.json()).error || 'Erreur ' + res.status)
+    return null
+  },
 }
 
 export default demoApi

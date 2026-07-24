@@ -435,3 +435,101 @@ describe('Commentaires', () => {
   })
 
 })
+
+describe('Invitations', () => {
+
+  let token, alexToken, boardId
+
+  beforeEach(async () => {
+    await fetch(BASE + '/_reset', { method: 'POST' })
+    const { data: alex } = await post('/auth/login', { email: 'alex@protask.dev', password: 'pass123' })
+    alexToken = alex.token
+    const { data: board } = await post('/boards', { title: 'Invite Test' }, alexToken)
+    boardId = board.id
+  })
+
+  it('liste les invitations d\'un board', async () => {
+    const { status, data } = await get('/boards/' + boardId + '/invitations', alexToken)
+    expect(status).toBe(200)
+    expect(Array.isArray(data)).toBe(true)
+  })
+
+  it('invite un membre existant', async () => {
+    const { status, data } = await post('/boards/' + boardId + '/invitations', { email: 'sophie@protask.dev' }, alexToken)
+    expect(status).toBe(201)
+    expect(data.email).toBe('sophie@protask.dev')
+    expect(data.status).toBe('pending')
+  })
+
+  it('rejette email invalide', async () => {
+    const { status, data } = await post('/boards/' + boardId + '/invitations', { email: 'pasmail' }, alexToken)
+    expect(status).toBe(400)
+    expect(data.error).toContain('Email invalide')
+  })
+
+  it('rejette utilisateur inexistant', async () => {
+    const { status, data } = await post('/boards/' + boardId + '/invitations', { email: 'nobody@test.com' }, alexToken)
+    expect(status).toBe(404)
+    expect(data.error).toContain('inexistant')
+  })
+
+  it('rejette un membre déjà invité', async () => {
+    await post('/boards/' + boardId + '/invitations', { email: 'sophie@protask.dev' }, alexToken)
+    const { status, data } = await post('/boards/' + boardId + '/invitations', { email: 'sophie@protask.dev' }, alexToken)
+    expect(status).toBe(400)
+    expect(data.error).toContain('Déjà invité')
+  })
+
+  it('accepte une invitation', async () => {
+    await post('/boards/' + boardId + '/invitations', { email: 'sophie@protask.dev' }, alexToken)
+    const { data: invs } = await get('/boards/' + boardId + '/invitations', alexToken)
+    const { data: sophie } = await post('/auth/login', { email: 'sophie@protask.dev', password: 'pass123' })
+    const { status, data } = await patch('/invitations/' + invs[0].id, { status: 'accepted' }, sophie.token)
+    expect(status).toBe(200)
+    expect(data.status).toBe('accepted')
+  })
+
+  it('refuse une invitation', async () => {
+    await post('/boards/' + boardId + '/invitations', { email: 'sophie@protask.dev' }, alexToken)
+    const { data: invs } = await get('/boards/' + boardId + '/invitations', alexToken)
+    const { data: sophie } = await post('/auth/login', { email: 'sophie@protask.dev', password: 'pass123' })
+    const { status, data } = await patch('/invitations/' + invs[0].id, { status: 'declined' }, sophie.token)
+    expect(status).toBe(200)
+    expect(data.status).toBe('declined')
+  })
+
+  it('wrong user ne peut pas répondre', async () => {
+    await post('/boards/' + boardId + '/invitations', { email: 'sophie@protask.dev' }, alexToken)
+    const { data: invs } = await get('/boards/' + boardId + '/invitations', alexToken)
+    const { status, data } = await patch('/invitations/' + invs[0].id, { status: 'accepted' }, alexToken)
+    expect(status).toBe(403)
+    expect(data.error).toContain('pas répondre')
+  })
+
+  it('annule une invitation', async () => {
+    await post('/boards/' + boardId + '/invitations', { email: 'sophie@protask.dev' }, alexToken)
+    const { data: invs } = await get('/boards/' + boardId + '/invitations', alexToken)
+    const { status } = await del('/invitations/' + invs[0].id, alexToken)
+    expect(status).toBe(204)
+  })
+
+  it('retire un membre', async () => {
+    await post('/boards/' + boardId + '/invitations', { email: 'sophie@protask.dev' }, alexToken)
+    const { data: invs } = await get('/boards/' + boardId + '/invitations', alexToken)
+    const { data: sophie } = await post('/auth/login', { email: 'sophie@protask.dev', password: 'pass123' })
+    await patch('/invitations/' + invs[0].id, { status: 'accepted' }, sophie.token)
+    const { status } = await del('/boards/' + boardId + '/members/' + sophie.user.id, alexToken)
+    expect(status).toBe(204)
+  })
+
+  it('retourne 403 si non-propriétaire retire un membre', async () => {
+    await post('/boards/' + boardId + '/invitations', { email: 'sophie@protask.dev' }, alexToken)
+    const { data: invs } = await get('/boards/' + boardId + '/invitations', alexToken)
+    const { data: sophie } = await post('/auth/login', { email: 'sophie@protask.dev', password: 'pass123' })
+    await patch('/invitations/' + invs[0].id, { status: 'accepted' }, sophie.token)
+    const { data: marc } = await post('/auth/login', { email: 'marc@protask.dev', password: 'pass123' })
+    const { status } = await del('/boards/' + boardId + '/members/' + sophie.user.id, marc.token)
+    expect(status).toBe(403)
+  })
+
+})
