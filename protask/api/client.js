@@ -36,6 +36,46 @@ const demoApi = {
     _token = null
     return result
   },
+
+  async getBoards() {
+    return request('GET', '/boards')
+  },
+
+  async getBoard(id) {
+    return request('GET', '/boards/' + id)
+  },
+
+  async createBoard(data) {
+    return request('POST', '/boards', data)
+  },
+
+  async updateBoard(id, data) {
+    return request('PUT', '/boards/' + id, data)
+  },
+
+  async deleteBoard(id) {
+    return request('DELETE', '/boards/' + id)
+  },
+
+  async getColumns(boardId) {
+    return request('GET', '/boards/' + boardId + '/columns')
+  },
+
+  async createColumn(boardId, data) {
+    return request('POST', '/boards/' + boardId + '/columns', data)
+  },
+
+  async updateColumn(id, data) {
+    return request('PUT', '/columns/' + id, data)
+  },
+
+  async deleteColumn(id) {
+    return request('DELETE', '/columns/' + id)
+  },
+
+  async reorderColumns(items) {
+    return request('PUT', '/columns/reorder', items)
+  },
 }
 
 export default demoApi

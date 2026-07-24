@@ -65,9 +65,37 @@ function sanitizeUser(user) {
   return safe
 }
 
+function findBoard(id) {
+  const b = mockData.boards.find(x => x.id === id)
+  if (!b) throw new Error('Board introuvable.')
+  return b
+}
+
+function findColumn(id) {
+  const c = mockData.columns.find(x => x.id === id)
+  if (!c) throw new Error('Colonne introuvable.')
+  return c
+}
+
+function findUser(id) {
+  return mockData.users.find(x => x.id === id)
+}
+
 const app = new Hono()
 
 app.use('/api/*', cors())
+
+app.use('/api/*', async (c, next) => {
+  if (c.req.path.startsWith('/api/auth/') || c.req.path === '/api/_reset') return next()
+  const auth = c.req.header('Authorization')
+  if (!auth || !auth.startsWith('Bearer token-')) return c.json({ error: 'Non authentifié.' }, 401)
+  const userId = parseInt(auth.slice('Bearer token-'.length))
+  const user = mockData.users.find(u => u.id === userId)
+  if (!user) return c.json({ error: 'Token invalide.' }, 401)
+  c.set('userId', userId)
+  c.set('currentUser', user)
+  return next()
+})
 
 app.post('/api/_reset', (c) => {
   resetData()
@@ -92,6 +120,123 @@ app.post('/api/auth/login', async (c) => {
 
 app.post('/api/auth/logout', (c) => {
   return c.json({ success: true })
+})
+
+// Boards
+app.get('/api/boards', (c) => {
+  const user = c.get('currentUser')
+  return c.json(mockData.boards
+    .filter(b => b.ownerId === user.id || (mockData.boardMembers[b.id] || []).includes(user.id))
+    .map(b => ({
+      ...b,
+      members: [mockData.users.find(u => u.id === b.ownerId), ...(mockData.boardMembers[b.id] || []).map(id => findUser(id))].filter(Boolean).map(m => sanitizeUser(m)),
+      cardCount: mockData.cards.filter(card => mockData.columns.filter(col => col.boardId === b.id).some(col => col.id === card.columnId)).length,
+    })))
+})
+
+app.post('/api/boards', async (c) => {
+  const user = c.get('currentUser')
+  const { title, color, categories, description } = await c.req.json()
+  if (!title) return c.json({ error: 'Le titre est obligatoire.' }, 400)
+  const board = { id: mockData.boards.length + 1, title, ownerId: user.id, description: description || '', color: color || '#000000', categories: categories || [], createdAt: new Date().toISOString() }
+  mockData.boards.push(board)
+  mockData.boardMembers[board.id] = []
+  ;['À faire', 'En cours', 'Terminé'].forEach((title, i) => {
+    mockData.columns.push({ id: mockData.columns.length + 1, title, order: i, boardId: board.id, color: '#6B7280', description: '' })
+  })
+  return c.json(board, 201)
+})
+
+app.get('/api/boards/:id', (c) => {
+  try {
+    const board = findBoard(parseInt(c.req.param('id')))
+    const cols = mockData.columns.filter(col => col.boardId === board.id).sort((a, b) => a.order - b.order)
+    const members = [mockData.users.find(u => u.id === board.ownerId), ...(mockData.boardMembers[board.id] || []).map(id => findUser(id))].filter(Boolean)
+    return c.json({ ...board, columns: cols, members: members.map(m => sanitizeUser(m)) })
+  } catch (e) {
+    return c.json({ error: e.message }, 404)
+  }
+})
+
+app.put('/api/boards/:id', async (c) => {
+  try {
+    const board = findBoard(parseInt(c.req.param('id')))
+    const data = await c.req.json()
+    Object.assign(board, data)
+    return c.json(board)
+  } catch (e) {
+    return c.json({ error: e.message }, 404)
+  }
+})
+
+app.delete('/api/boards/:id', (c) => {
+  try {
+    const user = c.get('currentUser')
+    const board = findBoard(parseInt(c.req.param('id')))
+    if (board.ownerId !== user.id) return c.json({ error: 'Seul le propriétaire peut supprimer ce board.' }, 403)
+    const colIds = mockData.columns.filter(col => col.boardId === board.id).map(col => col.id)
+    mockData.cards = mockData.cards.filter(card => !colIds.includes(card.columnId))
+    mockData.columns = mockData.columns.filter(col => col.boardId !== board.id)
+    mockData.boards = mockData.boards.filter(b => b.id !== board.id)
+    return c.body(null, 204)
+  } catch (e) {
+    return c.json({ error: e.message }, 404)
+  }
+})
+
+// Columns
+app.get('/api/boards/:id/columns', (c) => {
+  try {
+    const board = findBoard(parseInt(c.req.param('id')))
+    return c.json(mockData.columns.filter(col => col.boardId === board.id).sort((a, b) => a.order - b.order))
+  } catch (e) {
+    return c.json({ error: e.message }, 404)
+  }
+})
+
+app.post('/api/boards/:id/columns', async (c) => {
+  try {
+    const board = findBoard(parseInt(c.req.param('id')))
+    const { title, color, description } = await c.req.json()
+    if (!title) return c.json({ error: 'Le titre est obligatoire.' }, 400)
+    const cols = mockData.columns.filter(col => col.boardId === board.id)
+    const col = { id: mockData.columns.length + 1, title, order: cols.length, boardId: board.id, color: color || '#6B7280', description: description || '' }
+    mockData.columns.push(col)
+    return c.json(col, 201)
+  } catch (e) {
+    return c.json({ error: e.message }, 404)
+  }
+})
+
+app.put('/api/columns/reorder', async (c) => {
+  const items = await c.req.json()
+  items.forEach(({ id, order }) => {
+    const col = mockData.columns.find(x => x.id === id)
+    if (col) col.order = order
+  })
+  return c.json(mockData.columns.sort((a, b) => a.order - b.order))
+})
+
+app.put('/api/columns/:id', async (c) => {
+  try {
+    const col = findColumn(parseInt(c.req.param('id')))
+    const data = await c.req.json()
+    Object.assign(col, data)
+    return c.json(col)
+  } catch (e) {
+    return c.json({ error: e.message }, 404)
+  }
+})
+
+app.delete('/api/columns/:id', (c) => {
+  try {
+    const col = findColumn(parseInt(c.req.param('id')))
+    mockData.cards = mockData.cards.filter(card => card.columnId !== col.id)
+    mockData.columns = mockData.columns.filter(x => x.id !== col.id)
+    return c.body(null, 204)
+  } catch (e) {
+    return c.json({ error: e.message }, 404)
+  }
 })
 
 export default app
