@@ -4,17 +4,17 @@
 
 **Blocked by:** 01 — Serveur Hono + Auth
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] `GET /api/boards` liste les boards de l'utilisateur connecté
-- [ ] `POST /api/boards` crée un board (avec titre, couleur, catégories, description) + 3 colonnes par défaut
-- [ ] `GET /api/boards/:id` retourne un board avec ses colonnes et membres
-- [ ] `PATCH /api/boards/:id` met à jour titre/couleur/catégories/description
-- [ ] `DELETE /api/boards/:id` supprime board + colonnes + cartes associées
-- [ ] `GET /api/boards/:id/columns` liste les colonnes triées par ordre
-- [ ] `POST /api/boards/:id/columns` crée une colonne
-- [ ] `PATCH /api/columns/:id` met à jour titre/couleur/description
-- [ ] `DELETE /api/columns/:id` supprime une colonne + ses cartes
-- [ ] `POST /api/columns/reorder` réordonne les colonnes
-- [ ] Client expose les 10 méthodes
-- [ ] Tests e2e : chaque route appelée en succès + erreurs (board introuvable, colonne introuvable)
+- [x] `GET /api/boards` liste les boards de l'utilisateur connecté
+- [x] `POST /api/boards` crée un board (avec titre, couleur, catégories, description) + 3 colonnes par défaut
+- [x] `GET /api/boards/:id` retourne un board avec ses colonnes et membres
+- [x] `PUT /api/boards/:id` met à jour titre/couleur/catégories/description
+- [x] `DELETE /api/boards/:id` supprime board + colonnes + cartes associées
+- [x] `GET /api/boards/:id/columns` liste les colonnes triées par ordre
+- [x] `POST /api/boards/:id/columns` crée une colonne
+- [x] `PUT /api/columns/:id` met à jour titre/couleur/description
+- [x] `DELETE /api/columns/:id` supprime une colonne + ses cartes
+- [x] `PUT /api/columns/reorder` réordonne les colonnes
+- [x] Client expose les 10 méthodes
+- [x] Tests e2e : chaque route appelée en succès + erreurs (board introuvable, colonne introuvable)
