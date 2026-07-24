@@ -46,7 +46,7 @@ projets-ideas/
 │   ├── docs/
 │   │   ├── prd.md
 │   │   ├── openapi.json          ← Contrat OpenAPI 3.0 (19 routes)
-│   │   └── adr/                  ← Architecture Decision Records
+│   │   └── adr/                  ← ADRs spécifiques à ProTask
 │   ├── api/
 │   │   ├── server.js             ← Serveur Hono (fichier unique)
 │   │   ├── client.js             ← Wrapper fetch pour les templates
@@ -56,8 +56,13 @@ projets-ideas/
 │       │   ├── index.html        ← Template neo-brutalist (1131 lignes, 5 <template>)
 │       │   └── neo-brutalist.spec.js  ← Tests e2e (30 tests)
 │       └── (5 autres thèmes vides)
-└── shopflow/                     ← Projet e-commerce (dépriorisé)
-    └── ...
+├── shopflow/                     ← Projet e-commerce (dépriorisé)
+│   └── ...
+├── docs/                         ← Documentation globale du repo
+│   ├── adr/
+│   │   └── 0001-standalone-api-server.md  ← Décision architecturale globale
+│   └── spec-standalone-api-server.md      ← Spécification d'implémentation
+└── ...
 ```
 
 ## Architecture technique
