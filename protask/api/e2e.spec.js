@@ -330,3 +330,108 @@ describe('Cartes', () => {
   })
 
 })
+
+describe('Labels', () => {
+
+  let token, boardId
+
+  beforeEach(async () => {
+    await fetch(BASE + '/_reset', { method: 'POST' })
+    const { data: loginData } = await post('/auth/login', { email: 'alex@protask.dev', password: 'pass123' })
+    token = loginData.token
+    const { data: board } = await post('/boards', { title: 'Label Test' }, token)
+    boardId = board.id
+  })
+
+  it('liste les labels d\'un board', async () => {
+    const { status, data } = await get('/boards/' + boardId + '/labels', token)
+    expect(status).toBe(200)
+    expect(Array.isArray(data)).toBe(true)
+  })
+
+  it('crée un label', async () => {
+    const { status, data } = await post('/boards/' + boardId + '/labels', { name: 'Bug', color: '#FF0000', description: 'Anomalies' }, token)
+    expect(status).toBe(201)
+    expect(data.name).toBe('Bug')
+    expect(data.color).toBe('#FF0000')
+    expect(data.description).toBe('Anomalies')
+    expect(data.boardId).toBe(boardId)
+  })
+
+  it('exige un nom pour créer un label', async () => {
+    const { status, data } = await post('/boards/' + boardId + '/labels', {}, token)
+    expect(status).toBe(400)
+    expect(data.error).toContain('nom')
+  })
+
+  it('met à jour un label', async () => {
+    const { data: label } = await post('/boards/' + boardId + '/labels', { name: 'Avant' }, token)
+    const { status, data } = await patch('/labels/' + label.id, { name: 'Après', color: '#00FF00', description: 'Modifié' }, token)
+    expect(status).toBe(200)
+    expect(data.name).toBe('Après')
+    expect(data.color).toBe('#00FF00')
+    expect(data.description).toBe('Modifié')
+  })
+
+  it('retourne 404 sur label inconnu', async () => {
+    const { status } = await patch('/labels/999', { name: 'Nope' }, token)
+    expect(status).toBe(404)
+  })
+
+  it('supprime un label', async () => {
+    const { data: label } = await post('/boards/' + boardId + '/labels', { name: 'À supprimer' }, token)
+    const { status } = await del('/labels/' + label.id, token)
+    expect(status).toBe(204)
+    const { data: labels } = await get('/boards/' + boardId + '/labels', token)
+    expect(labels.find(l => l.id === label.id)).toBeUndefined()
+  })
+
+})
+
+describe('Commentaires', () => {
+
+  let token, cardId
+
+  beforeEach(async () => {
+    await fetch(BASE + '/_reset', { method: 'POST' })
+    const { data: loginData } = await post('/auth/login', { email: 'alex@protask.dev', password: 'pass123' })
+    token = loginData.token
+    const { data: board } = await post('/boards', { title: 'Comment Test' }, token)
+    const { data: cols } = await get('/boards/' + board.id + '/columns', token)
+    const { data: card } = await post('/columns/' + cols[0].id + '/cards', { title: 'Test Card' }, token)
+    cardId = card.id
+  })
+
+  it('liste les commentaires d\'une carte', async () => {
+    const { status, data } = await get('/cards/' + cardId + '/comments', token)
+    expect(status).toBe(200)
+    expect(Array.isArray(data)).toBe(true)
+  })
+
+  it('ajoute un commentaire', async () => {
+    const { status, data } = await post('/cards/' + cardId + '/comments', { text: 'Mon commentaire' }, token)
+    expect(status).toBe(201)
+    expect(data.text).toBe('Mon commentaire')
+    expect(data.author).toBeDefined()
+  })
+
+  it('exige un texte pour ajouter un commentaire', async () => {
+    const { status, data } = await post('/cards/' + cardId + '/comments', {}, token)
+    expect(status).toBe(400)
+    expect(data.error).toContain('texte')
+  })
+
+  it('supprime un commentaire', async () => {
+    const { data: comment } = await post('/cards/' + cardId + '/comments', { text: 'À supprimer' }, token)
+    const { status } = await del('/comments/' + comment.id, token)
+    expect(status).toBe(204)
+    const { data: comments } = await get('/cards/' + cardId + '/comments', token)
+    expect(comments.find(c => c.id === comment.id)).toBeUndefined()
+  })
+
+  it('retourne 404 sur commentaire inconnu', async () => {
+    const { status } = await del('/comments/999', token)
+    expect(status).toBe(404)
+  })
+
+})

@@ -87,6 +87,10 @@ function findUser(id) {
   return mockData.users.find(x => x.id === id)
 }
 
+function findLabel(id) {
+  return mockData.labels.find(x => x.id === id)
+}
+
 function resolveCard(card, includeComments = false) {
   const assignee = card.assigneeId ? findUser(card.assigneeId) : null
   const resolvedLabels = (card.labels || []).map(id => mockData.labels.find(l => l.id === id)).filter(Boolean)
@@ -337,6 +341,78 @@ app.post('/api/cards/:id/move', async (c) => {
   } catch (e) {
     return c.json({ error: e.message }, 404)
   }
+})
+
+// Labels
+app.get('/api/boards/:id/labels', (c) => {
+  const boardId = parseInt(c.req.param('id'))
+  return c.json(mockData.labels.filter(l => l.boardId === boardId))
+})
+
+app.post('/api/boards/:id/labels', async (c) => {
+  const boardId = parseInt(c.req.param('id'))
+  const { name, color, description } = await c.req.json()
+  if (!name) return c.json({ error: 'Le nom est obligatoire.' }, 400)
+  const label = { id: mockData.labels.length + 1, name, color: color || '#6B7280', boardId, description: description || '' }
+  mockData.labels.push(label)
+  return c.json(label, 201)
+})
+
+app.patch('/api/labels/:id', async (c) => {
+  const label = findLabel(parseInt(c.req.param('id')))
+  if (!label) return c.json({ error: 'Label introuvable.' }, 404)
+  const data = await c.req.json()
+  const allowed = ['name', 'color', 'description']
+  for (const key of allowed) {
+    if (key in data) label[key] = data[key]
+  }
+  return c.json(label)
+})
+
+app.delete('/api/labels/:id', (c) => {
+  const id = parseInt(c.req.param('id'))
+  const label = findLabel(id)
+  if (!label) return c.json({ error: 'Label introuvable.' }, 404)
+  mockData.labels = mockData.labels.filter(l => l.id !== id)
+  mockData.cards.forEach(card => {
+    card.labels = card.labels.filter(l => l !== id)
+  })
+  return c.body(null, 204)
+})
+
+// Comments
+app.get('/api/cards/:id/comments', (c) => {
+  try {
+    findCard(parseInt(c.req.param('id')))
+    const id = parseInt(c.req.param('id'))
+    return c.json(mockData.comments.filter(cm => cm.cardId === id).map(cm => ({
+      ...cm, author: sanitizeUser(findUser(cm.authorId))
+    })))
+  } catch (e) {
+    return c.json({ error: e.message }, 404)
+  }
+})
+
+app.post('/api/cards/:id/comments', async (c) => {
+  try {
+    const card = findCard(parseInt(c.req.param('id')))
+    const { text } = await c.req.json()
+    if (!text) return c.json({ error: 'Le texte est obligatoire.' }, 400)
+    const user = c.get('currentUser')
+    const comment = { id: mockData.comments.length + 1, text, authorId: user.id, cardId: card.id, createdAt: new Date().toISOString() }
+    mockData.comments.push(comment)
+    return c.json({ ...comment, author: sanitizeUser(user) }, 201)
+  } catch (e) {
+    return c.json({ error: e.message }, 404)
+  }
+})
+
+app.delete('/api/comments/:id', (c) => {
+  const id = parseInt(c.req.param('id'))
+  const comment = mockData.comments.find(cm => cm.id === id)
+  if (!comment) return c.json({ error: 'Commentaire introuvable.' }, 404)
+  mockData.comments = mockData.comments.filter(cm => cm.id !== id)
+  return c.body(null, 204)
 })
 
 export default app

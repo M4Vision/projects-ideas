@@ -106,6 +106,38 @@ const demoApi = {
   async reorderCards(items) {
     return request('POST', '/cards/reorder', items)
   },
+
+  async getLabels(boardId) {
+    return request('GET', '/boards/' + boardId + '/labels')
+  },
+
+  async createLabel(boardId, data) {
+    return request('POST', '/boards/' + boardId + '/labels', data)
+  },
+
+  async updateLabel(id, data) {
+    return request('PATCH', '/labels/' + id, data)
+  },
+
+  async deleteLabel(id) {
+    const res = await fetch(API_URL + '/labels/' + id, { method: 'DELETE', headers: headers() })
+    if (!res.ok) throw new Error((await res.json()).error || 'Erreur ' + res.status)
+    return null
+  },
+
+  async getComments(cardId) {
+    return request('GET', '/cards/' + cardId + '/comments')
+  },
+
+  async addComment(cardId, data) {
+    return request('POST', '/cards/' + cardId + '/comments', data)
+  },
+
+  async deleteComment(id) {
+    const res = await fetch(API_URL + '/comments/' + id, { method: 'DELETE', headers: headers() })
+    if (!res.ok) throw new Error((await res.json()).error || 'Erreur ' + res.status)
+    return null
+  },
 }
 
 export default demoApi
