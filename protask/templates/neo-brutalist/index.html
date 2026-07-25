@@ -127,10 +127,9 @@ a:hover{background:var(--gold)}
 .unsaved-indicator{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);margin-left:12px}
 .unsaved-indicator .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block}
 .label-picker{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
-.label-picker label{display:flex;align-items:center;gap:6px;padding:4px 10px;border:3px solid var(--border);cursor:pointer;font-size:12px;font-weight:700;text-transform:uppercase;user-select:none;transition:opacity .15s}
-.label-picker label input{display:none}
-.label-picker label.checked{opacity:1;box-shadow:3px 3px 0 var(--border)}
-.label-picker label:not(.checked){opacity:.5}
+.label-picker div{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:3px solid var(--border);font-size:12px;font-weight:700;text-transform:uppercase;user-select:none;transition:opacity .15s}
+.label-picker div.checked{opacity:1;box-shadow:3px 3px 0 var(--border)}
+.label-picker div:not(.checked){opacity:.5}
 
 /* Settings */
 .settings-wrap{max-width:680px}
@@ -876,9 +875,9 @@ async function openCardModal(cardId) {
       `<option value="${m.id}" ${card.assignee && card.assignee.id === m.id ? 'selected' : ''}>${m.name}</option>`
     ).join('');
     const labelPickerHtml = labels.map(l =>
-      `<label class="${cardLabelIds.has(l.id) ? 'checked' : ''}" style="border-color:${l.color};color:${l.color}" onclick="event.currentTarget.classList.toggle('checked')">
-        <input type="checkbox" value="${l.id}" ${cardLabelIds.has(l.id) ? 'checked' : ''}> ${l.name}
-      </label>`
+      `<div class="${cardLabelIds.has(l.id) ? 'checked' : ''}" style="border-color:${l.color};color:${l.color};cursor:pointer" data-label-id="${l.id}">
+        ${l.name}
+      </div>`
     ).join('');
 
     const editHtml = `
@@ -907,8 +906,8 @@ async function openCardModal(cardId) {
     document.getElementById('modal-labels').textContent = (card.labels||[]).map(l => l.name).join(', ') || 'Aucun';
 
     function getSelectedLabelIds() {
-      const els = (document.getElementById('label-picker')||document).querySelectorAll('label.checked input[type=checkbox]');
-      return Array.from(els).map(el => parseInt(el.value)).filter(n => !isNaN(n));
+      const els = (document.getElementById('label-picker')||document).querySelectorAll('div.checked');
+      return Array.from(els).map(el => parseInt(el.dataset.labelId)).filter(n => !isNaN(n));
     }
 
     const initialData = { title: card.title, description: card.description || '', dueDate: card.dueDate || '', assigneeId: card.assignee ? card.assignee.id : '', labelIds: getSelectedLabelIds() };
@@ -927,7 +926,12 @@ async function openCardModal(cardId) {
     document.getElementById('modal-edit-desc').addEventListener('input', checkUnsaved);
     document.getElementById('modal-edit-due').addEventListener('change', checkUnsaved);
     document.getElementById('modal-edit-assignee').addEventListener('change', checkUnsaved);
-    document.getElementById('label-picker').addEventListener('click', checkUnsaved);
+    document.getElementById('label-picker').querySelectorAll('div[data-label-id]').forEach(el => {
+      el.addEventListener('click', function() {
+        this.classList.toggle('checked');
+        checkUnsaved();
+      });
+    });
 
     document.getElementById('modal-save-btn').addEventListener('click', async () => {
       const title = document.getElementById('modal-edit-title').value.trim();

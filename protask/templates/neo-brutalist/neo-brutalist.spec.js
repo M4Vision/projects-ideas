@@ -674,9 +674,12 @@ test.describe('ProTask — Invitations & CRUD (API directe)', () => {
     await page.waitForTimeout(300);
     await expect(page.locator('#modal-overlay')).toHaveClass(/show/);
     await expect(page.locator('#label-picker')).toBeVisible();
-    const firstLabel = page.locator('#label-picker label').first();
-    await firstLabel.click();
-    await expect(firstLabel).toHaveClass(/checked/);
+
+    // Click second label (not already checked) to add it
+    const secondLabel = page.locator('#label-picker div[data-label-id]').nth(1);
+    await secondLabel.click();
+    await expect(secondLabel).toHaveClass(/checked/);
+
     await page.click('#modal-save-btn');
     await page.waitForTimeout(500);
     await expect(page.locator('#modal-labels')).not.toContainText('Aucun');
