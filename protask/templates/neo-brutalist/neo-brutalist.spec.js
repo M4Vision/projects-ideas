@@ -649,4 +649,54 @@ test.describe('ProTask — Invitations & CRUD (API directe)', () => {
     await expect(page.locator('.toast.error')).toBeVisible();
   });
 
+  test('assigner un label à une carte via le modal UI', async ({ page }) => {
+    await page.goto('/protask/templates/neo-brutalist/index.html');
+    await page.fill('#login-email', 'alex@protask.dev');
+    await page.fill('#login-password', 'pass123');
+    await page.click('#login-submit-btn');
+    await page.waitForTimeout(400);
+    await expect(page.locator('#page-dashboard')).toHaveClass(/active/);
+    const existingBoard = page.locator('.board-card').first();
+    if (await existingBoard.isVisible()) {
+      await existingBoard.click();
+      await page.waitForTimeout(300);
+      await expect(page.locator('#page-board')).toHaveClass(/active/);
+    }
+    const adder = page.locator('[data-add-card]').first();
+    await expect(adder).toBeVisible({ timeout: 3000 });
+    await adder.click();
+    await dialogConfirm(page, 'Carte Labels');
+    await page.waitForTimeout(300);
+    await page.evaluate(() => {
+      const el = document.querySelector('.task-card');
+      if (el) openCardModal(+el.dataset.cardId);
+    });
+    await page.waitForTimeout(300);
+    await expect(page.locator('#modal-overlay')).toHaveClass(/show/);
+    await expect(page.locator('#label-picker')).toBeVisible();
+    const firstLabel = page.locator('#label-picker label').first();
+    await firstLabel.click();
+    await expect(firstLabel).toHaveClass(/checked/);
+    await page.click('#modal-save-btn');
+    await page.waitForTimeout(500);
+    await expect(page.locator('#modal-labels')).not.toContainText('Aucun');
+    await page.locator('#modal-close-btn').click();
+  });
+
+  test('assigner un label à une carte via API directe', async ({ page }) => {
+    const result = await page.evaluate(async () => {
+      await window.demoApi.login({ email: 'alex@protask.dev', password: 'pass123' });
+      const b = await window.demoApi.getBoards();
+      const board = b[0];
+      const cols = await window.demoApi.getColumns(board.id);
+      const labels = await window.demoApi.getLabels(board.id);
+      if (!cols.length || !labels.length) return { ok: false };
+      const card = await window.demoApi.createCard(cols[0].id, { title: 'Label Card', labels: [] });
+      await window.demoApi.updateCard(card.id, { labels: [labels[0].id] });
+      const updated = await window.demoApi.getCard(card.id);
+      return { ok: updated.labels && updated.labels.length > 0 && updated.labels[0].id === labels[0].id };
+    });
+    expect(result.ok).toBe(true);
+  });
+
 });

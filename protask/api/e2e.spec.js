@@ -303,6 +303,21 @@ describe('Cartes', () => {
     expect(data.assignee).toBeDefined()
   })
 
+  it('assigne des labels à une carte par ID', async () => {
+    const { data: card } = await post('/columns/' + colId + '/cards', { title: 'Labels Test' }, token)
+    const { data: boards } = await get('/boards', token)
+    const boardId = boards[0].id
+    await post('/boards/' + boardId + '/labels', { name: 'Test', color: '#FF0' }, token)
+    const { data: labels } = await get('/boards/' + boardId + '/labels', token)
+    expect(labels.length).toBeGreaterThan(0)
+    const labelId = labels[0].id
+    const { status, data } = await patch('/cards/' + card.id, { labels: [labelId] }, token)
+    expect(status).toBe(200)
+    expect(data.labels).toBeDefined()
+    expect(data.labels.length).toBe(1)
+    expect(data.labels[0].id).toBe(labelId)
+  })
+
   it('supprime une carte et ses commentaires', async () => {
     const { data: card } = await post('/columns/' + colId + '/cards', { title: 'À supprimer' }, token)
     const { status } = await del('/cards/' + card.id, token)

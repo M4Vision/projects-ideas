@@ -126,6 +126,11 @@ a:hover{background:var(--gold)}
 .modal-add-comment .brutal-input{flex:1;padding:10px 14px;font-size:13px}
 .unsaved-indicator{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);margin-left:12px}
 .unsaved-indicator .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block}
+.label-picker{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.label-picker label{display:flex;align-items:center;gap:6px;padding:4px 10px;border:3px solid var(--border);cursor:pointer;font-size:12px;font-weight:700;text-transform:uppercase;user-select:none;transition:opacity .15s}
+.label-picker label input{display:none}
+.label-picker label.checked{opacity:1;box-shadow:3px 3px 0 var(--border)}
+.label-picker label:not(.checked){opacity:.5}
 
 /* Settings */
 .settings-wrap{max-width:680px}
@@ -864,21 +869,30 @@ async function openCardModal(cardId) {
   try {
     const card = await api.getCard(cardId);
     document.getElementById('modal-title').textContent = card.title;
+    const labels = await api.getLabels(activeBoardId);
+    const cardLabelIds = new Set((card.labels||[]).map(l => l.id));
 
     const assigneeOpts = activeBoardMembers.map(m =>
       `<option value="${m.id}" ${card.assignee && card.assignee.id === m.id ? 'selected' : ''}>${m.name}</option>`
     ).join('');
+    const labelPickerHtml = labels.map(l =>
+      `<label class="${cardLabelIds.has(l.id) ? 'checked' : ''}" style="border-color:${l.color};color:${l.color}" onclick="event.currentTarget.classList.toggle('checked')">
+        <input type="checkbox" value="${l.id}" ${cardLabelIds.has(l.id) ? 'checked' : ''}> ${l.name}
+      </label>`
+    ).join('');
+
     const editHtml = `
       <div class="modal-edit" style="margin-bottom:16px">
         <input class="brutal-input" id="modal-edit-title" value="${card.title}" style="margin-bottom:8px">
         <textarea class="brutal-input" id="modal-edit-desc" style="margin-bottom:8px;min-height:60px">${card.description || ''}</textarea>
         <input class="brutal-input" id="modal-edit-due" type="date" value="${card.dueDate || ''}" style="margin-bottom:8px">
-        <br>
         <div class="label" style="margin-top:8px">Assigné à</div>
-        <select class="brutal-input" id="modal-edit-assignee" style="margin-bottom:8px;height:40px">
+        <select class="brutal-input" id="modal-edit-assignee" style="margin-bottom:8px">
           <option value="">Non assigné</option>
           ${assigneeOpts}
         </select>
+        <div class="label" style="margin:8px 0 4px">Labels</div>
+        <div class="label-picker" id="label-picker">${labelPickerHtml}</div>
         <div style="display:flex;gap:8px;margin-top:4px">
           <button class="brutal-btn sm" id="modal-save-btn">Sauvegarder</button>
           <span class="unsaved-indicator" id="unsaved-indicator" style="display:none"><span class="dot"></span> Modifications non sauvegardées</span>
@@ -892,7 +906,12 @@ async function openCardModal(cardId) {
     document.getElementById('modal-due').textContent = card.dueDate ? formatDate(card.dueDate) : 'Non définie';
     document.getElementById('modal-labels').textContent = (card.labels||[]).map(l => l.name).join(', ') || 'Aucun';
 
-    const initialData = { title: card.title, description: card.description || '', dueDate: card.dueDate || '', assigneeId: card.assignee ? card.assignee.id : '' };
+    function getSelectedLabelIds() {
+      const els = (document.getElementById('label-picker')||document).querySelectorAll('label.checked input[type=checkbox]');
+      return Array.from(els).map(el => parseInt(el.value)).filter(n => !isNaN(n));
+    }
+
+    const initialData = { title: card.title, description: card.description || '', dueDate: card.dueDate || '', assigneeId: card.assignee ? card.assignee.id : '', labelIds: getSelectedLabelIds() };
     function checkUnsaved() {
       const indicator = document.getElementById('unsaved-indicator');
       if (!indicator) return;
@@ -900,13 +919,15 @@ async function openCardModal(cardId) {
       const desc = document.getElementById('modal-edit-desc').value;
       const due = document.getElementById('modal-edit-due').value;
       const assignee = document.getElementById('modal-edit-assignee')?.value || '';
-      const changed = title !== initialData.title || desc !== initialData.description || due !== initialData.dueDate || assignee !== String(initialData.assigneeId);
+      const lid = getSelectedLabelIds();
+      const changed = title !== initialData.title || desc !== initialData.description || due !== initialData.dueDate || assignee !== String(initialData.assigneeId) || JSON.stringify(lid) !== JSON.stringify(initialData.labelIds);
       indicator.style.display = changed ? 'inline-flex' : 'none';
     }
     document.getElementById('modal-edit-title').addEventListener('input', checkUnsaved);
     document.getElementById('modal-edit-desc').addEventListener('input', checkUnsaved);
     document.getElementById('modal-edit-due').addEventListener('change', checkUnsaved);
     document.getElementById('modal-edit-assignee').addEventListener('change', checkUnsaved);
+    document.getElementById('label-picker').addEventListener('click', checkUnsaved);
 
     document.getElementById('modal-save-btn').addEventListener('click', async () => {
       const title = document.getElementById('modal-edit-title').value.trim();
@@ -914,8 +935,9 @@ async function openCardModal(cardId) {
       const dueDate = document.getElementById('modal-edit-due').value || null;
       const assigneeEl = document.getElementById('modal-edit-assignee');
       const assigneeId = assigneeEl ? parseInt(assigneeEl.value) || null : undefined;
+      const labelIds = getSelectedLabelIds();
       if (!title) { showToast('Titre requis', 'error'); return; }
-      await api.updateCard(cardId, { title, description, dueDate, assigneeId });
+      await api.updateCard(cardId, { title, description, dueDate, assigneeId, labels: labelIds });
       document.getElementById('unsaved-indicator').style.display = 'none';
       showToast('Carte mise à jour');
       await openCardModal(cardId);
