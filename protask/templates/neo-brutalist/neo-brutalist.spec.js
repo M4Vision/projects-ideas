@@ -6,7 +6,14 @@ const OPENAPI_METHODS = ALL_METHODS.filter(m => !['getColumns', 'cancelInvitatio
 
 async function dialogConfirm(page, value) {
   await expect(page.locator('#dialog-overlay')).toHaveClass(/show/);
-  if (value !== undefined) await page.fill('#dialog-input', value);
+  if (value !== undefined) {
+    const inputType = await page.locator('#dialog-input').getAttribute('type');
+    if (inputType === 'color') {
+      await page.locator('#dialog-input').evaluate((el, v) => { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); }, value);
+    } else {
+      await page.fill('#dialog-input', value);
+    }
+  }
   await page.click('#dialog-confirm-btn');
 }
 
@@ -575,6 +582,71 @@ test.describe('ProTask — Invitations & CRUD (API directe)', () => {
     expect(result.desc).toBe('Col 2');
     expect(result.reordered).toBe(true);
     expect(result.deleted).toBe(true);
+  });
+
+  test('assignee picker — update assignee via modal UI', async ({ page }) => {
+    await page.goto('/protask/templates/neo-brutalist/index.html');
+    await page.fill('#login-email', 'alex@protask.dev');
+    await page.fill('#login-password', 'pass123');
+    await page.click('#login-submit-btn');
+    await page.waitForTimeout(400);
+    await expect(page.locator('#page-dashboard')).toHaveClass(/active/);
+    const existingBoard = page.locator('.board-card').first();
+    if (await existingBoard.isVisible()) {
+      await existingBoard.click();
+      await page.waitForTimeout(300);
+      await expect(page.locator('#page-board')).toHaveClass(/active/);
+    }
+    const addBtn = page.locator('[data-add-card]').first();
+    if (!(await addBtn.isVisible())) {
+      await page.click('#dash-new-board-btn');
+      await dialogConfirm(page, 'Assignee Test');
+      await page.waitForTimeout(300);
+    }
+    const adder = page.locator('[data-add-card]').first();
+    await expect(adder).toBeVisible({ timeout: 3000 });
+    await adder.click();
+    await dialogConfirm(page, 'Carte Test');
+    await page.waitForTimeout(300);
+    const card = page.locator('.task-card').first();
+    await expect(card).toBeVisible({ timeout: 5000 });
+    await page.evaluate(() => {
+      const el = document.querySelector('.task-card');
+      if (el) openCardModal(+el.dataset.cardId);
+    });
+    await page.waitForTimeout(300);
+    await expect(page.locator('#modal-overlay')).toHaveClass(/show/);
+    await expect(page.locator('#modal-edit-assignee')).toBeVisible();
+    await page.selectOption('#modal-edit-assignee', '2');
+    await expect(page.locator('#unsaved-indicator')).toBeVisible();
+    await page.click('#modal-save-btn');
+    await page.waitForTimeout(500);
+    await expect(page.locator('#modal-assignee')).not.toContainText('Non assigné');
+    await page.locator('#modal-close-btn').click();
+  });
+
+  test('self-invite rejetée avec toast erreur', async ({ page }) => {
+    await page.goto('/protask/templates/neo-brutalist/index.html');
+    await page.fill('#login-email', 'alex@protask.dev');
+    await page.fill('#login-password', 'pass123');
+    await page.click('#login-submit-btn');
+    await page.waitForTimeout(400);
+    await expect(page.locator('#page-dashboard')).toHaveClass(/active/);
+    let boardBtn = page.locator('.board-card').first();
+    if (!(await boardBtn.isVisible())) {
+      await page.click('#dash-new-board-btn');
+      await dialogConfirm(page, 'Invite Test');
+      await page.waitForTimeout(300);
+    } else {
+      await boardBtn.click();
+      await page.waitForTimeout(300);
+    }
+    await expect(page.locator('#page-board')).toHaveClass(/active/);
+    await page.locator('#board-invite-btn').waitFor({ state: 'visible', timeout: 3000 });
+    await page.click('#board-invite-btn');
+    await dialogConfirm(page, 'alex@protask.dev');
+    await page.waitForTimeout(300);
+    await expect(page.locator('.toast.error')).toBeVisible();
   });
 
 });

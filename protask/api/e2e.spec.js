@@ -467,6 +467,12 @@ describe('Invitations', () => {
     expect(data.error).toContain('Email invalide')
   })
 
+  it('rejette auto-invitation', async () => {
+    const { status, data } = await post('/boards/' + boardId + '/invitations', { email: 'alex@protask.dev' }, alexToken)
+    expect(status).toBe(400)
+    expect(data.error).toContain('pas vous inviter')
+  })
+
   it('rejette utilisateur inexistant', async () => {
     const { status, data } = await post('/boards/' + boardId + '/invitations', { email: 'nobody@test.com' }, alexToken)
     expect(status).toBe(404)

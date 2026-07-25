@@ -124,6 +124,8 @@ a:hover{background:var(--gold)}
 .modal-comment-text{font-size:13px;margin-top:4px;font-weight:500}
 .modal-add-comment{display:flex;gap:12px}
 .modal-add-comment .brutal-input{flex:1;padding:10px 14px;font-size:13px}
+.unsaved-indicator{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);margin-left:12px}
+.unsaved-indicator .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block}
 
 /* Settings */
 .settings-wrap{max-width:680px}
@@ -378,7 +380,7 @@ a:hover{background:var(--gold)}
     <div class="dialog-header"><span id="dialog-title">--</span></div>
     <div class="dialog-body">
       <p id="dialog-message" style="display:none"></p>
-      <input class="brutal-input" id="dialog-input" type="text" style="display:none" autofocus>
+      <input class="brutal-input" id="dialog-input" type="text" style="display:none">
     </div>
     <div class="dialog-footer">
       <button class="brutal-btn sm" id="dialog-cancel-btn">Annuler</button>
@@ -462,10 +464,12 @@ function showDialog(title, opts) {
     const msgEl = document.getElementById('dialog-message');
     const inputEl = document.getElementById('dialog-input');
     const isInput = opts && opts.input;
+    const isColor = opts && opts.inputType === 'color';
     msgEl.style.display = opts && opts.message ? 'block' : 'none';
     msgEl.textContent = (opts && opts.message) || '';
     inputEl.style.display = isInput ? 'block' : 'none';
-    if (isInput) { inputEl.value = opts.inputValue || ''; setTimeout(() => inputEl.focus(), 100); }
+    inputEl.type = isColor ? 'color' : 'text';
+    if (isInput) { inputEl.value = opts.inputValue || (isColor ? '#000000' : ''); }
     overlay.classList.add('show');
     function cleanup(val) {
       overlay.classList.remove('show');
@@ -475,12 +479,13 @@ function showDialog(title, opts) {
       resolve(val);
     }
     document.getElementById('dialog-confirm-btn').onclick = () => {
-      if (isInput) { const v = inputEl.value.trim(); if (!v) return; cleanup(v); }
+      if (isColor) { cleanup(inputEl.value); }
+      else if (isInput) { const v = inputEl.value.trim(); if (!v) return; cleanup(v); }
       else cleanup(true);
     };
     document.getElementById('dialog-cancel-btn').onclick = () => cleanup(null);
-    if (isInput) inputEl.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('dialog-confirm-btn').click(); } if (e.key === 'Escape') cleanup(null); };
-    else overlay.onclick = e => { if (e.target === overlay) cleanup(null); };
+    if (isInput && !isColor) inputEl.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('dialog-confirm-btn').click(); } if (e.key === 'Escape') cleanup(null); };
+    else if (!isInput) overlay.onclick = e => { if (e.target === overlay) cleanup(null); };
   });
 }
 
@@ -489,6 +494,7 @@ function showDialog(title, opts) {
 function getUser() { return typeof getCurrentUser === 'function' ? getCurrentUser() : null; }
 let activeBoardId = null;
 let activeCardId = null;
+let activeBoardMembers = [];
 
 // ====================== NAV ======================
 
@@ -702,8 +708,9 @@ async function renderBoard(boardId) {
     const board = await api.getBoard(boardId);
     document.getElementById('board-title').textContent = board.title;
     document.getElementById('nav-board').textContent = 'Board: ' + board.title;
-    const avEl = document.getElementById('board-avatars');
     const mems = board.members || [];
+    activeBoardMembers = mems;
+    const avEl = document.getElementById('board-avatars');
     avEl.innerHTML = '';
     mems.slice(0, 3).forEach(m => {
       const div = document.createElement('div');
@@ -858,13 +865,23 @@ async function openCardModal(cardId) {
     const card = await api.getCard(cardId);
     document.getElementById('modal-title').textContent = card.title;
 
+    const assigneeOpts = activeBoardMembers.map(m =>
+      `<option value="${m.id}" ${card.assignee && card.assignee.id === m.id ? 'selected' : ''}>${m.name}</option>`
+    ).join('');
     const editHtml = `
       <div class="modal-edit" style="margin-bottom:16px">
         <input class="brutal-input" id="modal-edit-title" value="${card.title}" style="margin-bottom:8px">
         <textarea class="brutal-input" id="modal-edit-desc" style="margin-bottom:8px;min-height:60px">${card.description || ''}</textarea>
         <input class="brutal-input" id="modal-edit-due" type="date" value="${card.dueDate || ''}" style="margin-bottom:8px">
-        <div style="display:flex;gap:8px">
+        <br>
+        <div class="label" style="margin-top:8px">Assigné à</div>
+        <select class="brutal-input" id="modal-edit-assignee" style="margin-bottom:8px;height:40px">
+          <option value="">Non assigné</option>
+          ${assigneeOpts}
+        </select>
+        <div style="display:flex;gap:8px;margin-top:4px">
           <button class="brutal-btn sm" id="modal-save-btn">Sauvegarder</button>
+          <span class="unsaved-indicator" id="unsaved-indicator" style="display:none"><span class="dot"></span> Modifications non sauvegardées</span>
           <button class="brutal-btn sm" id="modal-delete-btn" style="background:var(--accent);color:#fff;margin-left:auto">Supprimer la carte</button>
         </div>
       </div>
@@ -875,14 +892,33 @@ async function openCardModal(cardId) {
     document.getElementById('modal-due').textContent = card.dueDate ? formatDate(card.dueDate) : 'Non définie';
     document.getElementById('modal-labels').textContent = (card.labels||[]).map(l => l.name).join(', ') || 'Aucun';
 
+    const initialData = { title: card.title, description: card.description || '', dueDate: card.dueDate || '', assigneeId: card.assignee ? card.assignee.id : '' };
+    function checkUnsaved() {
+      const indicator = document.getElementById('unsaved-indicator');
+      if (!indicator) return;
+      const title = document.getElementById('modal-edit-title').value;
+      const desc = document.getElementById('modal-edit-desc').value;
+      const due = document.getElementById('modal-edit-due').value;
+      const assignee = document.getElementById('modal-edit-assignee')?.value || '';
+      const changed = title !== initialData.title || desc !== initialData.description || due !== initialData.dueDate || assignee !== String(initialData.assigneeId);
+      indicator.style.display = changed ? 'inline-flex' : 'none';
+    }
+    document.getElementById('modal-edit-title').addEventListener('input', checkUnsaved);
+    document.getElementById('modal-edit-desc').addEventListener('input', checkUnsaved);
+    document.getElementById('modal-edit-due').addEventListener('change', checkUnsaved);
+    document.getElementById('modal-edit-assignee').addEventListener('change', checkUnsaved);
+
     document.getElementById('modal-save-btn').addEventListener('click', async () => {
       const title = document.getElementById('modal-edit-title').value.trim();
       const description = document.getElementById('modal-edit-desc').value.trim();
       const dueDate = document.getElementById('modal-edit-due').value || null;
+      const assigneeEl = document.getElementById('modal-edit-assignee');
+      const assigneeId = assigneeEl ? parseInt(assigneeEl.value) || null : undefined;
       if (!title) { showToast('Titre requis', 'error'); return; }
-      await api.updateCard(cardId, { title, description, dueDate });
-      await openCardModal(cardId);
+      await api.updateCard(cardId, { title, description, dueDate, assigneeId });
+      document.getElementById('unsaved-indicator').style.display = 'none';
       showToast('Carte mise à jour');
+      await openCardModal(cardId);
     });
 
     document.getElementById('modal-delete-btn').addEventListener('click', async () => {
@@ -1067,7 +1103,7 @@ document.getElementById('settings-add-col').addEventListener('click', async () =
 document.getElementById('settings-add-label').addEventListener('click', async () => {
   const name = await showDialog('Nouveau label', { input: true });
   if (!name) return;
-  const color = await showDialog('Couleur du label', { input: true, inputValue: '#4F46E5' });
+  const color = await showDialog('Couleur du label', { input: true, inputType: 'color', inputValue: '#4F46E5' });
   if (!color) return;
   try {
     await api.createLabel(activeBoardId, { name: name.trim(), color: color.trim() });

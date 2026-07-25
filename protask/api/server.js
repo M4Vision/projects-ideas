@@ -444,6 +444,7 @@ app.post('/api/boards/:id/invitations', async (c) => {
     if (board.ownerId !== user.id) return c.json({ error: 'Seul le propriétaire peut inviter.' }, 403)
     const { email } = await c.req.json()
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return c.json({ error: 'Email invalide.' }, 400)
+    if (user.email === email) return c.json({ error: 'Vous ne pouvez pas vous inviter vous-même.' }, 400)
     const invited = mockData.users.find(u => u.email === email)
     if (!invited) return c.json({ error: 'Aucun utilisateur trouvé avec cet email.' }, 404)
     if ((mockData.boardMembers[board.id] || []).includes(invited.id)) return c.json({ error: 'Déjà membre.' }, 400)
