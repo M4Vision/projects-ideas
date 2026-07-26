@@ -25,6 +25,7 @@ const projectsData = [
 			{ id: 'forest', name: 'Forest', desc: 'Verts profonds, bois, ambiance sous-bois', file: 'protask/templates/forest/index.html' },
 			{ id: 'gold-noir', name: 'Gold & Noir', desc: 'Noir profond, accents dorés, élégance', file: 'protask/templates/gold-noir/index.html' },
 			{ id: 'terminal', name: 'Terminal', desc: 'Vert sur noir, typo mono, style hacker', file: 'protask/templates/terminal/index.html' },
+			{ id: 'material-dark', name: 'Material Dark', desc: 'Material Design sombre, violet/cyan, moderne', file: 'protask/templates/material-dark/index.html' },
 		],
 	},
 	{
