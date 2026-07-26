@@ -17,7 +17,7 @@
 			--card-hover: #1A1A1A;
 			--text-secondary: #888;
 			--radius: 8px;
-			--shadow: 0 0 0 1px var(--border);
+			--shadow: 0 0 0 1px var(--border)
 		}
 
 		* {
@@ -309,6 +309,102 @@
 			user-select: none
 		}
 
+		.markdown-body {
+			color: var(--fg);
+			line-height: 1.8;
+			max-width: 800px;
+			padding: 8px 0
+		}
+		.markdown-body h1,
+		.markdown-body h2,
+		.markdown-body h3,
+		.markdown-body h4 {
+			color: var(--fg);
+			margin: 1.5em 0 .5em;
+			font-weight: 600
+		}
+		.markdown-body h1 {
+			font-size: 1.8em;
+			border-bottom: 1px solid var(--border);
+			padding-bottom: .3em
+		}
+		.markdown-body h2 {
+			font-size: 1.4em;
+			border-bottom: 1px solid var(--border);
+			padding-bottom: .3em
+		}
+		.markdown-body h3 {
+			font-size: 1.15em
+		}
+		.markdown-body p {
+			margin: 0 0 1em
+		}
+		.markdown-body ul,
+		.markdown-body ol {
+			padding-left: 2em;
+			margin: 0 0 1em
+		}
+		.markdown-body li {
+			margin: .25em 0
+		}
+		.markdown-body code {
+			background: var(--card-hover);
+			padding: 2px 6px;
+			border-radius: 3px;
+			font-size: .9em
+		}
+		.markdown-body pre {
+			background: var(--bg);
+			padding: 16px;
+			border-radius: var(--radius);
+			overflow-x: auto;
+			margin: 0 0 1em
+		}
+		.markdown-body pre code {
+			background: none;
+			padding: 0;
+			font-size: .85em
+		}
+		.markdown-body a {
+			color: var(--accent)
+		}
+		.markdown-body a:hover {
+			text-decoration: underline
+		}
+		.markdown-body blockquote {
+			border-left: 3px solid var(--accent);
+			padding-left: 1em;
+			color: var(--text-secondary);
+			margin: 0 0 1em
+		}
+		.markdown-body table {
+			border-collapse: collapse;
+			margin: 0 0 1em;
+			width: 100%
+		}
+		.markdown-body th,
+		.markdown-body td {
+			border: 1px solid var(--border);
+			padding: 8px 12px;
+			text-align: left
+		}
+		.markdown-body th {
+			background: var(--card)
+		}
+		.markdown-body hr {
+			border: none;
+			border-top: 1px solid var(--border);
+			margin: 1.5em 0
+		}
+		.markdown-body img {
+			max-width: 100%;
+			border-radius: var(--radius)
+		}
+
+		#apiContainer {
+			font-family: system-ui, -apple-system, sans-serif
+		}
+
 		.view-btn {
 			padding: 4px 10px;
 			font-size: 11px;
@@ -386,11 +482,21 @@
 			<div class="code-panel" id="codePanel">
 				<div class="code-toolbar">
 					<span id="codeFileName"></span>
-					<button class="view-btn" onclick="window.switchView('preview')">✕ Retour</button>
+					<div style="display:flex;gap:4px;align-items:center">
+						<span id="apiOptions" style="display:none;align-items:center;gap:8px;font-size:12px;color:var(--text-secondary)">
+							API: <input id="apiUrlInput" style="width:180px;padding:3px 8px;font-size:12px;background:var(--card);border:1px solid var(--border);border-radius:4px;color:var(--fg);outline:none" />
+							Token: <input id="apiTokenInput" style="width:160px;padding:3px 8px;font-size:12px;background:var(--card);border:1px solid var(--border);border-radius:4px;color:var(--fg);outline:none" placeholder="token-1" />
+							<button class="view-btn" id="apiResetData" onclick="window.resetApiData()">↺ Reset</button>
+						</span>
+						<button class="view-btn" id="prdToggle" style="display:none" onclick="window.togglePrdView()">Source</button>
+						<button class="view-btn" id="apiToggle" style="display:none" onclick="window.toggleApiView()">Source</button>
+						<button class="view-btn" onclick="window.switchView('preview')">✕ Retour</button>
+					</div>
 				</div>
 				<div class="code-content" id="codeContent">
 					<div style="color:#888;padding:20px">Charge…</div>
 				</div>
+				<div id="apiContainer" style="display:none;flex:1;overflow:hidden"></div>
 			</div>
 		</div>
 	</div>
@@ -449,7 +555,7 @@
 		function selectTheme(themeId) {
 			currentTheme = currentProject.themes.find(t => t.id === themeId);
 			renderSidebar();
-			window.switchView('preview');
+			if (typeof window.switchView === 'function') window.switchView('preview');
 			if (currentTheme) {
 				const iframe = document.getElementById('previewFrame');
 				iframe.src = currentTheme.file;
@@ -466,7 +572,7 @@
 			});
 		}
 
-		init();
+		document.addEventListener('DOMContentLoaded', init);
 	</script>
 	<script type="module" src="./viewer.js"></script>
 	</script>
