@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProTask — Kanban</title>
+<style>
+:root {
+  --bg: #1b3d2b;
+  --bg-card: #2d5a3d;
+  --bg-secondary: #234a32;
+  --fg: #e8f0e4;
+  --fg-secondary: #a8c4a8;
+  --accent: #8fbc8f;
+  --accent-hover: #7aaa7a;
+  --accent-light: rgba(143, 188, 143, 0.15);
+  --green: #16a34a;
+  --red: #dc2626;
+  --orange: #d97706;
+  --border: #3a6b4a;
+  --border-light: #2d5a3d;
+  --shadow: 0 1px 3px rgba(0,0,0,.3),0 1px 2px rgba(0,0,0,.2);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,.4),0 2px 4px -2px rgba(0,0,0,.2);
+  --radius: 8px;
+  --radius-sm: 4px;
+  --font: Georgia, 'Times New Roman', serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--fg);min-height:100vh;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none;cursor:pointer}
+a:hover{text-decoration:underline}
+
+.nav{display:flex;align-items:center;background:var(--bg-card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;padding:0 32px;height:56px;gap:2px}
+.nav-logo{font-weight:700;font-size:18px;color:var(--accent);margin-right:24px;letter-spacing:-.5px}
+.nav-btn{padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--fg-secondary);border-radius:var(--radius-sm);transition:all .12s}
+.nav-btn:hover{background:var(--accent-light);color:var(--accent)}
+.nav-btn.active{background:var(--accent);color:#fff;font-weight:500}
+.nav-fill{flex:1}
+.nav-btn.logout{color:var(--red)}
+.nav-btn.logout:hover{background:#3d1a1a;color:var(--red)}
+
+.page{display:none;padding:32px 48px;max-width:1200px;margin:0 auto}
+.page.active{display:block}
+
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:space-between}
+.card-body{padding:20px}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;font-size:13px;font-weight:500;border-radius:var(--radius-sm);cursor:pointer;border:1px solid var(--border);background:var(--bg-card);color:var(--fg);transition:all .12s;white-space:nowrap;box-shadow:var(--shadow)}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 1px 3px rgba(143,188,143,.2)}
+.btn-primary:hover{background:var(--accent-hover);border-color:var(--accent-hover);color:#fff}
+.btn-danger{background:var(--red);color:#fff;border-color:var(--red)}
+.btn-danger:hover{background:#b91c1c;border-color:#b91c1c;color:#fff}
+.btn-ghost{border-color:transparent;background:transparent;box-shadow:none}
+.btn-ghost:hover{background:var(--bg-secondary);border-color:transparent;color:var(--fg)}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn-block{width:100%;justify-content:center}
+
+.input{width:100%;padding:9px 12px;font-size:14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-card);color:var(--fg);outline:none;transition:border-color .12s,box-shadow .12s}
+.input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(143,188,143,.1)}
+textarea.input{resize:vertical;min-height:80px}
+select.input{appearance:auto;cursor:pointer}
+
+.login-page{display:flex;justify-content:center;align-items:center;min-height:calc(100vh - 56px);background:var(--bg-secondary)}
+.login-card{width:420px;padding:40px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md)}
+.login-logo{font-size:26px;font-weight:700;text-align:center;margin-bottom:4px;color:var(--accent);letter-spacing:-.5px}
+.login-sub{text-align:center;font-size:13px;color:var(--fg-secondary);margin-bottom:28px}
+.login-field{margin-bottom:16px}
+.login-field label{display:block;font-size:12px;font-weight:500;color:var(--fg);margin-bottom:4px}
+.login-error{background:#3d1a1a;border:1px solid #5c1f1f;color:var(--red);padding:10px 14px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:16px;display:none}
+.login-error.show{display:block}
+.register-fields{display:none}
+.register-fields.show{display:block}
+.login-toggle{text-align:center;margin-top:20px;font-size:13px;color:var(--fg-secondary)}
+
+.dash-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+.dash-header h1{font-size:22px;font-weight:600;color:var(--fg)}
+.board-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}
+.board-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all .12s;box-shadow:var(--shadow);overflow:hidden}
+.board-card:hover{border-color:var(--accent);box-shadow:var(--shadow-md)}
+.board-card-color{height:4px;background:linear-gradient(90deg,var(--accent),#2d5a3d)}
+.board-card-body{padding:20px}
+.board-card-title{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--fg)}
+.board-card-meta{display:flex;gap:16px;font-size:12px;color:var(--fg-secondary)}
+.empty-state{border:2px dashed var(--border);border-radius:var(--radius);padding:40px;text-align:center;font-size:14px;color:var(--fg-secondary);grid-column:1/-1;background:var(--bg-card)}
+
+.board-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.board-top-left{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.board-top-left h2{font-size:20px;font-weight:600;color:var(--fg)}
+.board-avatars{display:flex}
+.board-avatar{width:32px;height:32px;border:2px solid var(--bg-card);border-radius:50%;margin-right:-6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;background:var(--accent-light);color:var(--accent)}
+.board-avatar:nth-child(2){background:rgba(22,163,74,.15);color:var(--green)}
+.board-avatar:nth-child(3){background:rgba(220,38,38,.15);color:var(--red)}
+.board-avatar:last-child{margin-right:0}
+.board-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start}
+.board-col{background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius)}
+.board-col-header{padding:12px 16px;font-weight:600;font-size:13px;color:var(--fg);display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
+.board-col-header .count{background:var(--bg-card);padding:1px 8px;border-radius:10px;font-size:11px;font-weight:500;color:var(--fg-secondary);border:1px solid var(--border)}
+.board-col-body{padding:10px;display:flex;flex-direction:column;gap:8px;min-height:60px}
+
+.task-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;cursor:grab;transition:all .1s;box-shadow:var(--shadow);position:relative}
+.task-card:hover{border-color:var(--accent);box-shadow:var(--shadow-md)}
+.task-card.dragging{opacity:.4;box-shadow:none}
+.task-card.drag-over{border-color:var(--accent);background:var(--accent-light)}
+.task-card .card-labels{display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap}
+.task-card .card-label{padding:1px 7px;font-size:10px;font-weight:500;border-radius:3px}
+.task-card .card-title{font-size:13px;font-weight:500;margin-bottom:6px;line-height:1.4}
+.task-card .card-footer{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--fg-secondary);flex-wrap:wrap;gap:4px}
+.task-card .card-assignee{display:flex;align-items:center;gap:4px}
+.task-card .mini-avatar{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;background:var(--accent-light);color:var(--accent)}
+.col-dropzone{min-height:60px}
+.col-dropzone.drag-over{background:var(--accent-light);outline:2px dashed var(--accent);outline-offset:-2px;border-radius:var(--radius-sm)}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;justify-content:center;align-items:center;padding:32px}
+.modal-overlay.show{display:flex}
+.modal{width:600px;max-height:90vh;overflow-y:auto;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.modal-header{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg-card);z-index:1;border-radius:var(--radius) var(--radius) 0 0}
+.modal-header h3{font-size:16px;font-weight:600}
+.modal-close{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:none;background:var(--bg-secondary);border-radius:var(--radius-sm);color:var(--fg-secondary);cursor:pointer;font-size:15px;transition:all .12s}
+.modal-close:hover{background:var(--border);color:var(--fg)}
+.modal-body{padding:22px}
+.modal-body h4{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--fg-secondary);margin-bottom:6px;font-weight:600}
+.modal-desc{font-size:14px;margin-bottom:20px;line-height:1.6}
+.modal-meta-row{display:flex;gap:28px;margin-bottom:22px;flex-wrap:wrap}
+.modal-meta-row .label{font-size:11px;color:var(--fg-secondary);font-weight:500}
+.modal-meta-row .value{font-size:13px;font-weight:500;margin-top:2px}
+.modal-comments{margin-bottom:18px}
+.modal-comment{padding:12px 16px;background:var(--bg);border:1px solid var(--border-light);border-radius:var(--radius-sm);margin-bottom:8px}
+.modal-comment-author{font-size:11px;font-weight:600;color:var(--fg-secondary);margin-bottom:3px}
+.modal-comment-text{font-size:13px}
+.modal-add-comment{display:flex;gap:8px}
+.modal-add-comment .input{flex:1}
+.unsaved-indicator{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;color:var(--orange);margin-left:8px}
+.unsaved-indicator .dot{width:6px;height:6px;border-radius:50%;background:var(--orange);display:inline-block}
+.label-picker{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.label-picker div{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:500;user-select:none;cursor:pointer;transition:all .12s}
+.label-picker div.checked{background:var(--accent-light);border-color:currentColor}
+.label-picker div:not(.checked){opacity:.5}
+.label-picker div:not(.checked):hover{opacity:1}
+
+.settings-wrap{max-width:620px}
+.settings-wrap h2{font-size:20px;font-weight:600;margin-bottom:22px}
+.settings-group{margin-bottom:18px}
+.settings-group label{display:block;font-size:12px;font-weight:500;color:var(--fg);margin-bottom:4px}
+.settings-cols{margin-bottom:18px}
+.settings-cols h3{font-size:14px;font-weight:600;margin-bottom:10px}
+.settings-col-item{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 14px;margin-bottom:6px;font-size:13px;background:var(--bg-card)}
+.settings-col-item .col-actions{display:flex;gap:6px}
+.settings-col-item .col-actions button{width:28px;height:28px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .12s;color:var(--fg-secondary)}
+.settings-col-item .col-actions button:hover{border-color:var(--accent);color:var(--accent)}
+.settings-col-item .col-actions button.del{color:var(--red);border-color:var(--red)}
+.settings-labels{margin-bottom:18px}
+.settings-labels h3{font-size:14px;font-weight:600;margin-bottom:10px}
+.settings-label-item{display:flex;align-items:center;gap:10px;margin-bottom:6px;padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-card)}
+.settings-label-item .color-swatch{width:22px;height:22px;border-radius:4px}
+.settings-label-item span{font-size:13px;font-weight:500}
+.hr{border:none;border-top:1px solid var(--border);margin:18px 0}
+
+.profile-wrap{max-width:500px}
+.profile-header{display:flex;align-items:center;gap:24px;margin-bottom:28px;flex-wrap:wrap}
+.profile-avatar{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:600;background:var(--accent-light);color:var(--accent);flex-shrink:0}
+.profile-info h2{font-size:20px;font-weight:600}
+.profile-info .email{font-size:13px;color:var(--fg-secondary);margin-top:2px}
+.profile-form label{display:block;font-size:12px;font-weight:500;color:var(--fg);margin-bottom:4px}
+.profile-form .input{margin-bottom:14px}
+.profile-pw-section{border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:18px;background:var(--bg)}
+.profile-pw-section h3{font-size:14px;font-weight:600;margin-bottom:10px}
+
+.toast{position:fixed;bottom:24px;right:24px;padding:10px 18px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;z-index:300;opacity:0;transform:translateY(10px);transition:all .2s ease;pointer-events:none;box-shadow:var(--shadow-md)}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.success{background:var(--green);color:#fff}
+.toast.error{background:var(--red);color:#fff}
+
+.dialog-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:400;justify-content:center;align-items:center;padding:32px}
+.dialog-overlay.show{display:flex}
+.dialog{width:400px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.dialog-header{padding:16px 20px;border-bottom:1px solid var(--border);font-weight:600;font-size:14px}
+.dialog-body{padding:20px}
+.dialog-body p{font-size:14px;margin-bottom:6px}
+.dialog-footer{display:flex;gap:8px;padding:0 20px 16px;justify-content:flex-end}
+
+@media(min-width:1200px){.board-cols{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:1024px){
+  .page{padding:28px 32px}.dash-header h1{font-size:20px}.board-top-left h2{font-size:18px}
+  .board-cols{gap:14px}.login-card{padding:32px}
+}
+@media(max-width:768px){
+  .board-cols{grid-template-columns:repeat(2,1fr)}.board-grid{grid-template-columns:repeat(2,1fr)}
+  .page{padding:20px 24px}.login-card{width:100%;max-width:420px;padding:28px}
+  .modal{width:90vw}.profile-wrap,.settings-wrap{max-width:100%}
+}
+@media(max-width:600px){
+  .nav{padding:0 16px;height:48px;overflow-x:auto}
+  .nav-logo{font-size:15px;margin-right:12px;flex-shrink:0}
+  .nav-btn{padding:6px 12px;font-size:12px;flex-shrink:0}
+  .page{padding:16px}
+  .board-cols{grid-template-columns:1fr;gap:10px}.board-grid{grid-template-columns:1fr;gap:12px}
+  .dash-header{flex-direction:column;align-items:flex-start;gap:8px;margin-bottom:14px}
+  .dash-header h1{font-size:18px}.board-top{flex-direction:column;align-items:flex-start}
+  .modal-overlay{padding:8px}.modal{width:100%}.modal-header{padding:14px 16px}.modal-body{padding:16px}
+  .modal-meta-row{flex-direction:column;gap:8px}.modal-add-comment{flex-direction:column}
+  .login-card{padding:20px}.login-logo{font-size:22px}
+  .profile-avatar{width:56px;height:56px;font-size:20px}
+  .settings-wrap h2{font-size:18px;margin-bottom:14px}
+}
+</style>
+<script src="../../api/client.js"></script>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">ProTask</div>
+  <button class="nav-btn active" data-tab="login" id="nav-login">Connexion</button>
+  <button class="nav-btn" data-tab="dashboard" id="nav-dashboard" style="display:none">Dashboard</button>
+  <button class="nav-btn" data-tab="board" id="nav-board" style="display:none">Board</button>
+  <button class="nav-btn" data-tab="settings" id="nav-settings" style="display:none">Paramètres</button>
+  <button class="nav-btn" data-tab="profile" id="nav-profile" style="display:none">Profil</button>
+  <div class="nav-fill"></div>
+  <button class="nav-btn logout" id="nav-logout" style="display:none">Déconnexion</button>
+</nav>
+
+<div class="page active" id="page-login">
+  <div class="login-page">
+    <div class="login-card">
+      <div class="login-logo">ProTask</div>
+      <div class="login-sub">Gestion de projet · Kanban · Collaboration</div>
+      <div class="login-error" id="login-error"></div>
+      <form id="login-form" onsubmit="return false">
+        <div class="login-field register-fields" id="reg-name-field">
+          <label for="reg-name">Nom complet</label>
+          <input class="input" type="text" id="reg-name" placeholder="Jean Dupont">
+        </div>
+        <div class="login-field">
+          <label for="login-email">Email professionnel</label>
+          <input class="input" type="email" id="login-email" placeholder="prenom@entreprise.fr">
+        </div>
+        <div class="login-field register-fields" id="reg-confirm-field">
+          <label for="reg-confirm">Confirmer mot de passe</label>
+          <input class="input" type="password" id="reg-confirm" placeholder="••••••••">
+        </div>
+        <div class="login-field">
+          <label for="login-password">Mot de passe</label>
+          <input class="input" type="password" id="login-password" placeholder="••••••••">
+        </div>
+        <button class="btn btn-primary btn-block" style="margin-top:8px" id="login-submit-btn">Se connecter</button>
+      </form>
+      <div class="login-toggle">
+        <span id="login-toggle-text">Pas encore de compte ? <a id="login-toggle-link">Créer un compte</a></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-dashboard">
+  <div class="dash-header">
+    <h1>Mes Boards</h1>
+    <button class="btn btn-primary" id="dash-new-board-btn">+ Nouveau board</button>
+  </div>
+  <hr class="hr">
+  <div class="board-grid" id="dash-grid"></div>
+</div>
+
+<div class="page" id="page-board">
+  <div class="board-top">
+    <div class="board-top-left">
+      <h2 id="board-title">--</h2>
+      <div class="board-avatars" id="board-avatars"></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" id="board-invite-btn">+ Inviter</button>
+      <button class="btn btn-sm" id="board-invitations-btn">Invitations</button>
+    </div>
+  </div>
+  <div id="board-invitations-panel" style="display:none;margin-bottom:14px;border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;background:var(--bg-card)"></div>
+  <div class="board-cols" id="board-cols"></div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">--</h3>
+      <button class="modal-close" id="modal-close-btn">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <h4>Description</h4>
+      <p class="modal-desc" id="modal-desc"></p>
+      <div class="modal-meta-row">
+        <div><div class="label">Assigné à</div><div class="value" id="modal-assignee">--</div></div>
+        <div><div class="label">Échéance</div><div class="value" id="modal-due">--</div></div>
+        <div><div class="label">Labels</div><div class="value" id="modal-labels">--</div></div>
+      </div>
+      <hr class="hr">
+      <h4>Commentaires</h4>
+      <div class="modal-comments" id="modal-comments"></div>
+      <div class="modal-add-comment">
+        <input class="input" type="text" id="modal-comment-input" placeholder="Ajouter un commentaire...">
+        <button class="btn btn-primary btn-sm" id="modal-comment-btn">Envoyer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-settings">
+  <div class="settings-wrap">
+    <h2>Paramètres du Board</h2>
+    <hr class="hr">
+    <div class="settings-group">
+      <label for="settings-board-name">Nom du board</label>
+      <input class="input" type="text" id="settings-board-name">
+    </div>
+    <div class="settings-group">
+      <label for="settings-board-desc">Description</label>
+      <textarea class="input" id="settings-board-desc" placeholder="Description du board..."></textarea>
+    </div>
+    <hr class="hr">
+    <div class="settings-cols">
+      <h3>Colonnes</h3>
+      <div id="settings-col-list"></div>
+      <button class="btn btn-sm" id="settings-add-col" style="margin-top:8px">+ Ajouter une colonne</button>
+    </div>
+    <hr class="hr">
+    <div class="settings-labels">
+      <h3>Labels</h3>
+      <div id="settings-label-list"></div>
+      <button class="btn btn-sm" id="settings-add-label" style="margin-top:8px">+ Ajouter un label</button>
+    </div>
+    <hr class="hr">
+    <button class="btn btn-primary btn-block" id="settings-save-btn">Enregistrer</button>
+    <hr class="hr">
+    <button class="btn btn-danger btn-block" id="settings-del-board-btn" style="margin-top:8px">Supprimer le board</button>
+  </div>
+</div>
+
+<div class="page" id="page-profile">
+  <div class="profile-wrap">
+    <div class="profile-header">
+      <div class="profile-avatar" id="profile-avatar">--</div>
+      <div class="profile-info">
+        <h2 id="profile-name-display">--</h2>
+        <div class="email" id="profile-email-display">--</div>
+      </div>
+    </div>
+    <hr class="hr">
+    <div class="profile-form">
+      <label for="profile-name">Nom complet</label>
+      <input class="input" type="text" id="profile-name">
+      <label for="profile-email">Email</label>
+      <input class="input" type="email" id="profile-email">
+      <div class="profile-pw-section">
+        <h3>Modifier le mot de passe</h3>
+        <label for="profile-pw-current">Mot de passe actuel</label>
+        <input class="input" type="password" id="profile-pw-current" placeholder="••••••••">
+        <label for="profile-pw-new">Nouveau mot de passe</label>
+        <input class="input" type="password" id="profile-pw-new" placeholder="••••••••">
+        <label for="profile-pw-confirm">Confirmer</label>
+        <input class="input" type="password" id="profile-pw-confirm" placeholder="••••••••">
+      </div>
+      <button class="btn btn-primary btn-block" id="profile-save-btn">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="dialog-overlay" id="dialog-overlay">
+  <div class="dialog">
+    <div class="dialog-header"><span id="dialog-title">--</span></div>
+    <div class="dialog-body">
+      <p id="dialog-message" style="display:none"></p>
+      <input class="input" id="dialog-input" type="text" style="display:none">
+    </div>
+    <div class="dialog-footer">
+      <button class="btn btn-sm" id="dialog-cancel-btn">Annuler</button>
+      <button class="btn btn-sm btn-primary" id="dialog-confirm-btn">OK</button>
+    </div>
+  </div>
+</div>
+
+<template id="tmpl-card">
+  <div class="task-card" draggable="true">
+    <div class="card-labels"></div>
+    <div class="card-title"></div>
+    <div class="card-footer">
+      <div class="card-assignee"><span class="mini-avatar"></span><span class="assignee-name"></span></div>
+      <span class="card-date"></span>
+    </div>
+  </div>
+</template>
+
+<template id="tmpl-comment">
+  <div class="modal-comment">
+    <div class="modal-comment-author"></div>
+    <div class="modal-comment-text"></div>
+  </div>
+</template>
+
+<template id="tmpl-settings-col">
+  <div class="settings-col-item">
+    <span class="col-title"></span>
+    <div class="col-actions">
+      <button class="col-edit" title="Modifier">&#9998;</button>
+      <button class="col-del del" title="Supprimer">&#10005;</button>
+    </div>
+  </div>
+</template>
+
+<template id="tmpl-settings-label">
+  <div class="settings-label-item">
+    <div class="color-swatch"></div>
+    <span class="label-name"></span>
+  </div>
+</template>
+
+<template id="tmpl-label-badge">
+  <span class="card-label"></span>
+</template>
+
+<script>
+const api = demoApi;
+const toastEl = document.getElementById('toast');
+
+function showToast(msg, type) {
+  toastEl.textContent = msg;
+  toastEl.className = 'toast ' + (type || 'success') + ' show';
+  clearTimeout(toastEl._t);
+  toastEl._t = setTimeout(() => toastEl.classList.remove('show'), 3000);
+}
+
+function getInit(str) {
+  return str.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+}
+
+function formatDate(str) {
+  if (!str) return '';
+  return new Date(str + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+}
+
+function showLoading(parent) {
+  parent.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--fg-secondary)">Chargement...</div>';
+}
+
+function showDialog(title, opts) {
+  return new Promise(resolve => {
+    const overlay = document.getElementById('dialog-overlay');
+    document.getElementById('dialog-title').textContent = title;
+    const msgEl = document.getElementById('dialog-message');
+    const inputEl = document.getElementById('dialog-input');
+    const isInput = opts && opts.input;
+    const isColor = opts && opts.inputType === 'color';
+    msgEl.style.display = opts && opts.message ? 'block' : 'none';
+    msgEl.textContent = (opts && opts.message) || '';
+    inputEl.style.display = isInput ? 'block' : 'none';
+    inputEl.type = isColor ? 'color' : 'text';
+    if (isInput) { inputEl.value = opts.inputValue || (isColor ? '#000000' : ''); }
+    overlay.classList.add('show');
+    function cleanup(val) {
+      overlay.classList.remove('show');
+      document.getElementById('dialog-confirm-btn').onclick = null;
+      document.getElementById('dialog-cancel-btn').onclick = null;
+      inputEl.onkeydown = null;
+      resolve(val);
+    }
+    document.getElementById('dialog-confirm-btn').onclick = () => {
+      if (isColor) { cleanup(inputEl.value); }
+      else if (isInput) { const v = inputEl.value.trim(); if (!v) return; cleanup(v); }
+      else cleanup(true);
+    };
+    document.getElementById('dialog-cancel-btn').onclick = () => cleanup(null);
+    if (isInput && !isColor) inputEl.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('dialog-confirm-btn').click(); } if (e.key === 'Escape') cleanup(null); };
+    else if (!isInput) overlay.onclick = e => { if (e.target === overlay) cleanup(null); };
+  });
+}
+
+function getUser() { return typeof getCurrentUser === 'function' ? getCurrentUser() : null; }
+let activeBoardId = null;
+let activeCardId = null;
+let activeBoardMembers = [];
+
+const PAGES = {
+  login: 'page-login',
+  dashboard: 'page-dashboard',
+  board: 'page-board',
+  settings: 'page-settings',
+  profile: 'page-profile',
+};
+
+function navigate(tab) {
+  const navBtns = document.querySelectorAll('.nav-btn[data-tab]');
+  navBtns.forEach(b => b.classList.remove('active'));
+  Object.values(PAGES).forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById(PAGES[tab]).classList.add('active');
+  const btn = document.querySelector(`.nav-btn[data-tab="${tab}"]`);
+  if (btn) btn.classList.add('active');
+}
+
+function showAuthUI(isLoggedIn) {
+  const show = isLoggedIn ? '' : 'none';
+  const hide = isLoggedIn ? 'none' : '';
+  document.getElementById('nav-login').style.display = hide;
+  document.getElementById('nav-dashboard').style.display = show;
+  document.getElementById('nav-board').style.display = show;
+  document.getElementById('nav-settings').style.display = show;
+  document.getElementById('nav-profile').style.display = show;
+  document.getElementById('nav-logout').style.display = show;
+}
+
+let isRegister = false;
+const toggleLink = document.getElementById('login-toggle-link');
+const toggleText = document.getElementById('login-toggle-text');
+const loginError = document.getElementById('login-error');
+const loginSubmitBtn = document.getElementById('login-submit-btn');
+const regNameField = document.getElementById('reg-name-field');
+const regConfirmField = document.getElementById('reg-confirm-field');
+
+toggleLink.addEventListener('click', () => {
+  isRegister = !isRegister;
+  loginError.classList.remove('show');
+  regNameField.classList.toggle('show', isRegister);
+  regConfirmField.classList.toggle('show', isRegister);
+  if (isRegister) {
+    toggleText.childNodes[0].textContent = 'Déjà un compte ? ';
+    toggleLink.textContent = 'Se connecter';
+    loginSubmitBtn.textContent = "S'inscrire";
+  } else {
+    toggleText.childNodes[0].textContent = 'Pas encore de compte ? ';
+    toggleLink.textContent = 'Créer un compte';
+    loginSubmitBtn.textContent = 'Se connecter';
+  }
+});
+
+document.getElementById('login-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  loginError.classList.remove('show');
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) { showLoginError('Email et mot de passe requis'); return; }
+  try {
+    let res;
+    if (isRegister) {
+      const name = document.getElementById('reg-name').value.trim();
+      const confirm = document.getElementById('reg-confirm').value;
+      if (!name) { showLoginError('Nom complet requis'); return; }
+      if (password !== confirm) { showLoginError('Les mots de passe ne correspondent pas'); return; }
+      if (password.length < 8) { showLoginError('Minimum 8 caractères'); return; }
+      res = await api.register({ name, email, password });
+    } else {
+      res = await api.login({ email, password });
+    }
+    showAuthUI(true);
+    navigate('dashboard');
+    renderDashboard();
+    showToast('Connecté en tant que ' + res.user.name);
+  } catch (err) { showLoginError(err.message); }
+});
+
+function showLoginError(msg) {
+  loginError.textContent = msg;
+  loginError.classList.add('show');
+}
+
+document.getElementById('nav-logout').addEventListener('click', async () => {
+  await api.logout();
+  activeBoardId = null;
+  document.getElementById('nav-board').textContent = 'Board';
+  showAuthUI(false);
+  navigate('login');
+});
+
+document.querySelectorAll('.nav-btn[data-tab]').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const tab = btn.dataset.tab;
+    if (tab === 'dashboard') { renderDashboard(); navigate(tab); }
+    else if (tab === 'board') {
+      if (!activeBoardId) { showToast('Sélectionnez un board d\'abord', 'error'); return; }
+      await renderBoard(activeBoardId);
+      navigate(tab);
+    } else if (tab === 'settings') {
+      if (!activeBoardId) { showToast('Sélectionnez un board d\'abord', 'error'); return; }
+      await renderSettings(activeBoardId);
+      navigate(tab);
+    } else if (tab === 'profile') { await renderProfile(); navigate(tab); }
+    else navigate(tab);
+  });
+});
+
+async function renderDashboard() {
+  const grid = document.getElementById('dash-grid');
+  showLoading(grid);
+  try {
+    const boards = await api.getBoards();
+    if (!boards.length) {
+      grid.innerHTML = '<div class="empty-state">Aucun board pour le moment. Créez-en un !</div>';
+      return;
+    }
+    grid.innerHTML = boards.map(b => `
+      <div class="board-card" data-id="${b.id}">
+        <div class="board-card-color"></div>
+        <div class="board-card-body">
+          <div class="board-card-title">${b.title}</div>
+          <div class="board-card-meta">
+            <span>${(b.members||[]).length} membres</span>
+            <span>${b.cardCount} cartes</span>
+          </div>
+        </div>
+      </div>
+    `).join('');
+    grid.querySelectorAll('.board-card').forEach(el => {
+      el.addEventListener('click', async () => {
+        activeBoardId = +el.dataset.id;
+        await renderBoard(activeBoardId);
+        navigate('board');
+      });
+    });
+  } catch (err) {
+    grid.innerHTML = '<div class="empty-state">Erreur : ' + err.message + '</div>';
+  }
+}
+
+document.getElementById('dash-new-board-btn').addEventListener('click', async () => {
+  const title = await showDialog('Nouveau board', { input: true });
+  if (!title) return;
+  try {
+    const board = await api.createBoard({ title: title.trim() });
+    activeBoardId = board.id;
+    await renderBoard(activeBoardId);
+    navigate('board');
+    showToast('Board "' + board.title + '" créé');
+  } catch (err) { showToast(err.message, 'error'); }
+});
+
+let dragSrcId = null;
+let wasDragged = false;
+
+function setupCardDnD(cardEl) {
+  cardEl.addEventListener('dragstart', e => {
+    dragSrcId = +cardEl.dataset.cardId;
+    wasDragged = false;
+    cardEl.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    requestAnimationFrame(() => { wasDragged = true; });
+  });
+  cardEl.addEventListener('dragend', () => {
+    dragSrcId = null;
+    document.querySelectorAll('.task-card.dragging').forEach(c => c.classList.remove('dragging'));
+    document.querySelectorAll('.col-dropzone.drag-over').forEach(c => c.classList.remove('drag-over'));
+    document.querySelectorAll('.task-card.drag-over').forEach(c => c.classList.remove('drag-over'));
+  });
+}
+
+function setupColumnDnD(colBodyEl, colId) {
+  colBodyEl.classList.add('col-dropzone');
+  colBodyEl.addEventListener('dragover', e => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    colBodyEl.classList.add('drag-over');
+  });
+  colBodyEl.addEventListener('dragleave', () => colBodyEl.classList.remove('drag-over'));
+  colBodyEl.addEventListener('drop', async e => {
+    e.preventDefault();
+    colBodyEl.classList.remove('drag-over');
+    if (!dragSrcId) return;
+    await api.moveCard(dragSrcId, colId);
+    const cards = await api.getCards(colId);
+    const reorderItems = cards.map((c, i) => ({ id: c.id, order: i }));
+    await api.reorderCards(reorderItems);
+    await renderBoard(activeBoardId);
+    showToast('Carte déplacée');
+  });
+}
+
+async function renderBoard(boardId) {
+  const colsContainer = document.getElementById('board-cols');
+  showLoading(colsContainer);
+  try {
+    const board = await api.getBoard(boardId);
+    document.getElementById('board-title').textContent = board.title;
+    document.getElementById('nav-board').textContent = 'Board: ' + board.title;
+    const mems = board.members || [];
+    activeBoardMembers = mems;
+    const avEl = document.getElementById('board-avatars');
+    avEl.innerHTML = '';
+    mems.slice(0, 3).forEach(m => {
+      const div = document.createElement('div');
+      div.className = 'board-avatar';
+      div.title = m.name;
+      div.textContent = getInit(m.name);
+      div.style.cursor = 'pointer';
+      div.addEventListener('click', async () => {
+        const u = await api.getUser(m.id);
+        showToast(u.name + ' — ' + u.email);
+      });
+      avEl.appendChild(div);
+    });
+    if (mems.length > 3) avEl.innerHTML += `<div class="board-avatar" style="background:var(--border);color:var(--fg-secondary)">+${mems.length - 3}</div>`;
+    if (!mems.length) avEl.innerHTML = '';
+    const bCols = board.columns || [];
+    if (!bCols.length) {
+      colsContainer.innerHTML = '<div class="empty-state">Aucune colonne dans ce board</div>';
+      return;
+    }
+    colsContainer.innerHTML = bCols.map(c => `
+      <div class="board-col" data-col-id="${c.id}">
+        <div class="board-col-header">
+          <span>${c.title}</span>
+          <span class="count" id="col-count-${c.id}">0</span>
+          <button class="btn btn-sm" data-add-card="${c.id}" style="margin-left:auto">+</button>
+        </div>
+        <div class="board-col-body" id="col-body-${c.id}"></div>
+      </div>
+    `).join('');
+    for (const col of bCols) {
+      await loadColumnCards(col.id);
+      const body = document.getElementById('col-body-' + col.id);
+      if (body) setupColumnDnD(body, col.id);
+    }
+    document.querySelectorAll('[data-add-card]').forEach(btn => {
+      btn.addEventListener('click', async e => {
+        e.stopPropagation();
+        const colId = +btn.dataset.addCard;
+        const title = await showDialog('Nouvelle carte', { input: true });
+        if (title) {
+          await api.createCard(colId, { title: title });
+          await renderBoard(activeBoardId);
+          showToast('Carte créée');
+        }
+      });
+    });
+  } catch (err) {
+    colsContainer.innerHTML = '<div class="empty-state">Erreur : ' + err.message + '</div>';
+  }
+}
+
+async function loadColumnCards(colId) {
+  try {
+    const cards = await api.getCards(colId);
+    const body = document.getElementById('col-body-' + colId);
+    const countEl = document.getElementById('col-count-' + colId);
+    if (!body) return;
+    if (countEl) countEl.textContent = cards.length;
+    if (!cards.length) {
+      body.innerHTML = '<div style="padding:16px;text-align:center;color:var(--fg-secondary);font-size:12px">Aucune carte</div>';
+      return;
+    }
+    body.innerHTML = '';
+    for (const card of cards) {
+      const tmpl = document.getElementById('tmpl-card').content.cloneNode(true);
+      const el = tmpl.firstElementChild;
+      el.dataset.cardId = card.id;
+      el.addEventListener('click', () => { if (wasDragged) { wasDragged = false; return; } openCardModal(card.id); });
+      const labelsEl = el.querySelector('.card-labels');
+      const titleEl = el.querySelector('.card-title');
+      const footerEl = el.querySelector('.card-footer');
+      const avatarEl = el.querySelector('.mini-avatar');
+      const nameEl = el.querySelector('.assignee-name');
+      const dateEl = el.querySelector('.card-date');
+      titleEl.textContent = card.title;
+      if (card.labels && card.labels.length) {
+        labelsEl.innerHTML = card.labels.map(l => `<span class="card-label" style="background:${l.color}15;color:${l.color}">${l.name}</span>`).join('');
+      }
+      if (card.assignee) {
+        avatarEl.textContent = getInit(card.assignee.name);
+        nameEl.textContent = card.assignee.name.split(' ')[0];
+      } else {
+        footerEl.removeChild(footerEl.querySelector('.card-assignee'));
+      }
+      if (card.dueDate) {
+        dateEl.textContent = formatDate(card.dueDate);
+      } else {
+        dateEl.remove();
+      }
+      setupCardDnD(el);
+      body.appendChild(el);
+    }
+  } catch (err) {
+    const body = document.getElementById('col-body-' + colId);
+    if (body) body.innerHTML = '<div style="padding:16px;text-align:center;color:var(--red);font-size:13px">Erreur</div>';
+  }
+}
+
+document.getElementById('board-invite-btn').addEventListener('click', async () => {
+  const email = await showDialog('Inviter un membre', { input: true });
+  if (!email) return;
+  try {
+    await api.inviteMember(activeBoardId, email.trim());
+    showToast('Invitation envoyée à ' + email.trim());
+  } catch (err) { showToast(err.message, 'error'); }
+});
+
+document.getElementById('board-invitations-btn').addEventListener('click', async () => {
+  try {
+    const invs = await api.getInvitations(activeBoardId);
+    const pending = invs.filter(i => i.status === 'pending');
+    if (!pending.length) { showToast('Aucune invitation en attente', 'error'); return; }
+    const panel = document.getElementById('board-invitations-panel');
+    panel.innerHTML = '';
+    panel.style.display = 'block';
+    pending.forEach(inv => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)';
+      row.innerHTML = '<span style="font-weight:500;font-size:13px">' + inv.email + '</span>';
+      const btns = document.createElement('div');
+      btns.style.cssText = 'display:flex;gap:6px';
+      const accept = document.createElement('button');
+      accept.textContent = '✓';
+      accept.className = 'btn btn-sm';
+      accept.style.cssText = 'border-color:var(--green);color:var(--green)';
+      accept.addEventListener('click', async () => {
+        await api.acceptInvitation(inv.id);
+        showToast('Invitation acceptée');
+        panel.style.display = 'none';
+      });
+      const decline = document.createElement('button');
+      decline.textContent = '✕';
+      decline.className = 'btn btn-sm';
+      decline.style.cssText = 'border-color:var(--red);color:var(--red)';
+      decline.addEventListener('click', async () => {
+        await api.respondToInvitation(inv.id, 'declined');
+        showToast('Invitation refusée');
+        panel.style.display = 'none';
+      });
+      btns.appendChild(accept);
+      btns.appendChild(decline);
+      row.appendChild(btns);
+      panel.appendChild(row);
+    });
+  } catch (err) { showToast(err.message, 'error'); }
+});
+
+async function openCardModal(cardId) {
+  activeCardId = cardId;
+  try {
+    const card = await api.getCard(cardId);
+    document.getElementById('modal-title').textContent = card.title;
+    const labels = await api.getLabels(activeBoardId);
+    const cardLabelIds = new Set((card.labels||[]).map(l => l.id));
+
+    const assigneeOpts = activeBoardMembers.map(m =>
+      `<option value="${m.id}" ${card.assignee && card.assignee.id === m.id ? 'selected' : ''}>${m.name}</option>`
+    ).join('');
+    const labelPickerHtml = labels.map(l =>
+      `<div class="${cardLabelIds.has(l.id) ? 'checked' : ''}" style="border-color:${l.color};color:${l.color};cursor:pointer" data-label-id="${l.id}">
+        ${l.name}
+      </div>`
+    ).join('');
+
+    const editHtml = `
+      <div class="modal-edit" style="margin-bottom:16px">
+        <input class="input" id="modal-edit-title" value="${card.title}" style="margin-bottom:8px">
+        <textarea class="input" id="modal-edit-desc" style="margin-bottom:8px;min-height:60px">${card.description || ''}</textarea>
+        <input class="input" id="modal-edit-due" type="date" value="${card.dueDate || ''}" style="margin-bottom:8px">
+        <div style="margin-top:8px;font-size:11px;color:var(--fg-secondary);font-weight:500">Assigné à</div>
+        <select class="input" id="modal-edit-assignee" style="margin-bottom:8px">
+          <option value="">Non assigné</option>
+          ${assigneeOpts}
+        </select>
+        <div style="margin:8px 0 4px;font-size:11px;color:var(--fg-secondary);font-weight:500">Labels</div>
+        <div class="label-picker" id="label-picker">${labelPickerHtml}</div>
+        <div style="display:flex;gap:8px;margin-top:4px;align-items:center">
+          <button class="btn btn-primary btn-sm" id="modal-save-btn">Enregistrer</button>
+          <span class="unsaved-indicator" id="unsaved-indicator" style="display:none"><span class="dot"></span> Modifications non sauvegardées</span>
+          <button class="btn btn-danger btn-sm" id="modal-delete-btn" style="margin-left:auto">Supprimer la carte</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('modal-desc').innerHTML = editHtml;
+    document.getElementById('modal-assignee').textContent = card.assignee ? card.assignee.name : 'Non assigné';
+    document.getElementById('modal-due').textContent = card.dueDate ? formatDate(card.dueDate) : 'Non définie';
+    document.getElementById('modal-labels').textContent = (card.labels||[]).map(l => l.name).join(', ') || 'Aucun';
+
+    function getSelectedLabelIds() {
+      const els = (document.getElementById('label-picker')||document).querySelectorAll('div.checked');
+      return Array.from(els).map(el => parseInt(el.dataset.labelId)).filter(n => !isNaN(n));
+    }
+
+    const initialData = { title: card.title, description: card.description || '', dueDate: card.dueDate || '', assigneeId: card.assignee ? card.assignee.id : '', labelIds: getSelectedLabelIds() };
+    function checkUnsaved() {
+      const indicator = document.getElementById('unsaved-indicator');
+      if (!indicator) return;
+      const title = document.getElementById('modal-edit-title').value;
+      const desc = document.getElementById('modal-edit-desc').value;
+      const due = document.getElementById('modal-edit-due').value;
+      const assignee = document.getElementById('modal-edit-assignee')?.value || '';
+      const lid = getSelectedLabelIds();
+      const changed = title !== initialData.title || desc !== initialData.description || due !== initialData.dueDate || assignee !== String(initialData.assigneeId) || JSON.stringify(lid) !== JSON.stringify(initialData.labelIds);
+      indicator.style.display = changed ? 'inline-flex' : 'none';
+    }
+    document.getElementById('modal-edit-title').addEventListener('input', checkUnsaved);
+    document.getElementById('modal-edit-desc').addEventListener('input', checkUnsaved);
+    document.getElementById('modal-edit-due').addEventListener('change', checkUnsaved);
+    document.getElementById('modal-edit-assignee').addEventListener('change', checkUnsaved);
+    document.getElementById('label-picker').querySelectorAll('div[data-label-id]').forEach(el => {
+      el.addEventListener('click', function() {
+        this.classList.toggle('checked');
+        checkUnsaved();
+      });
+    });
+
+    document.getElementById('modal-save-btn').addEventListener('click', async () => {
+      const title = document.getElementById('modal-edit-title').value.trim();
+      const description = document.getElementById('modal-edit-desc').value.trim();
+      const dueDate = document.getElementById('modal-edit-due').value || null;
+      const assigneeEl = document.getElementById('modal-edit-assignee');
+      const assigneeId = assigneeEl ? parseInt(assigneeEl.value) || null : undefined;
+      const labelIds = getSelectedLabelIds();
+      if (!title) { showToast('Titre requis', 'error'); return; }
+      await api.updateCard(cardId, { title, description, dueDate, assigneeId, labels: labelIds });
+      document.getElementById('unsaved-indicator').style.display = 'none';
+      showToast('Carte mise à jour');
+      await openCardModal(cardId);
+    });
+
+    document.getElementById('modal-delete-btn').addEventListener('click', async () => {
+      const ok = await showDialog('Confirmation', { message: 'Supprimer cette carte ?' });
+      if (!ok) return;
+      await api.deleteCard(cardId);
+      closeModal();
+      await renderBoard(activeBoardId);
+      showToast('Carte supprimée');
+    });
+
+    const commentsEl = document.getElementById('modal-comments');
+    commentsEl.innerHTML = '';
+    if (!card.comments || !card.comments.length) {
+      commentsEl.innerHTML = '<div class="modal-comment"><div class="modal-comment-author">Système</div><div class="modal-comment-text">Aucun commentaire pour cette tâche.</div></div>';
+    } else {
+      for (const cm of card.comments) {
+        const t = document.getElementById('tmpl-comment').content.cloneNode(true);
+        t.querySelector('.modal-comment-author').textContent = (cm.author ? cm.author.name : 'Utilisateur inconnu') + ' • ' + new Date(cm.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+        t.querySelector('.modal-comment-text').textContent = cm.text;
+        const delBtn = document.createElement('button');
+        delBtn.textContent = '✕';
+        delBtn.className = 'btn btn-sm btn-ghost';
+        delBtn.style.cssText = 'color:var(--red);padding:2px 6px;font-size:10px;margin-top:4px';
+        delBtn.addEventListener('click', async () => {
+          await api.deleteComment(cm.id);
+          showToast('Commentaire supprimé');
+          await openCardModal(cardId);
+        });
+        t.querySelector('.modal-comment').appendChild(delBtn);
+        commentsEl.appendChild(t);
+      }
+    }
+    document.getElementById('modal-overlay').classList.add('show');
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+  activeCardId = null;
+}
+
+document.getElementById('modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+
+document.getElementById('modal-comment-btn').addEventListener('click', addComment);
+document.getElementById('modal-comment-input').addEventListener('keydown', e => { if (e.key === 'Enter') addComment(); });
+
+async function addComment() {
+  const input = document.getElementById('modal-comment-input');
+  const text = input.value.trim();
+  if (!text || !activeCardId) return;
+  try {
+    await api.addComment(activeCardId, { text });
+    input.value = '';
+    const comments = await api.getComments(activeCardId);
+    const el = document.getElementById('modal-comments');
+    el.innerHTML = '';
+    for (const cm of comments) {
+      const t = document.getElementById('tmpl-comment').content.cloneNode(true);
+      t.querySelector('.modal-comment-author').textContent = (cm.author ? cm.author.name : 'Utilisateur inconnu') + ' • ' + new Date(cm.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+      t.querySelector('.modal-comment-text').textContent = cm.text;
+      el.appendChild(t);
+    }
+    showToast('Commentaire ajouté');
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+async function renderSettings(boardId) {
+  try {
+    const board = await api.getBoard(boardId);
+    const cols = board.columns || [];
+    const labels = await api.getLabels(boardId);
+    document.getElementById('settings-board-name').value = board.title;
+    document.getElementById('settings-board-desc').value = board.description || '';
+    const colList = document.getElementById('settings-col-list');
+    colList.innerHTML = '';
+    cols.forEach((col, i) => {
+      const t = document.getElementById('tmpl-settings-col').content.cloneNode(true);
+      const el = t.firstElementChild;
+      el.querySelector('.col-title').textContent = col.title;
+      const editBtn = el.querySelector('.col-edit');
+      const delBtn = el.querySelector('.col-del');
+      const upBtn = document.createElement('button');
+      upBtn.textContent = '▲';
+      upBtn.title = 'Monter';
+      upBtn.style.cssText = 'color:var(--fg-secondary)';
+      upBtn.addEventListener('click', async (e) => { e.stopPropagation();
+        const siblings = [...colList.querySelectorAll('.settings-col-item')];
+        const idx = siblings.indexOf(el);
+        if (idx > 0) {
+          const items = cols.map((c, i) => ({ id: c.id, order: i === idx ? idx - 1 : i === idx - 1 ? idx : i }));
+          await api.reorderColumns(items);
+          await renderSettings(boardId);
+          showToast('Colonne déplacée');
+        }
+      });
+      el.querySelector('.col-actions').prepend(upBtn);
+      const downBtn = document.createElement('button');
+      downBtn.textContent = '▼';
+      downBtn.title = 'Descendre';
+      downBtn.style.cssText = 'color:var(--fg-secondary)';
+      downBtn.addEventListener('click', async (e) => { e.stopPropagation();
+        const siblings = [...colList.querySelectorAll('.settings-col-item')];
+        const idx = siblings.indexOf(el);
+        if (idx < siblings.length - 1) {
+          const items = cols.map((c, i) => ({ id: c.id, order: i === idx ? idx + 1 : i === idx + 1 ? idx : i }));
+          await api.reorderColumns(items);
+          await renderSettings(boardId);
+          showToast('Colonne déplacée');
+        }
+      });
+      el.querySelector('.col-actions').prepend(downBtn);
+      editBtn.addEventListener('click', async () => {
+        const t = await showDialog('Renommer la colonne', { input: true, inputValue: col.title });
+        if (t) { await api.updateColumn(col.id, { title: t }); await renderSettings(boardId); showToast('Colonne renommée'); }
+      });
+      delBtn.addEventListener('click', async () => {
+        const ok = await showDialog('Confirmation', { message: 'Supprimer "' + col.title + '" ?' });
+        if (ok) { await api.deleteColumn(col.id); await renderSettings(boardId); showToast('Colonne supprimée'); }
+      });
+      colList.appendChild(el);
+    });
+    const labelList = document.getElementById('settings-label-list');
+    labelList.innerHTML = '';
+    labels.forEach(l => {
+      const t = document.getElementById('tmpl-settings-label').content.cloneNode(true);
+      const el = t.firstElementChild;
+      el.querySelector('.color-swatch').style.background = l.color;
+      el.querySelector('.label-name').textContent = l.name;
+      const actions = document.createElement('div');
+      actions.style.cssText = 'display:flex;gap:6px;margin-left:auto';
+      const editLbl = document.createElement('button');
+      editLbl.textContent = '✎';
+      editLbl.className = 'btn btn-sm btn-ghost';
+      editLbl.addEventListener('click', async () => {
+        const n = await showDialog('Nom du label', { input: true, inputValue: l.name });
+        if (!n) return;
+        const c = await showDialog('Couleur du label', { input: true, inputType: 'color', inputValue: l.color });
+        if (!c) return;
+        await api.updateLabel(l.id, { name: n, color: c });
+        await renderSettings(boardId);
+        showToast('Label mis à jour');
+      });
+      const delLbl = document.createElement('button');
+      delLbl.textContent = '✕';
+      delLbl.className = 'btn btn-sm btn-ghost';
+      delLbl.style.cssText = 'color:var(--red)';
+      delLbl.addEventListener('click', async () => {
+        await api.deleteLabel(l.id);
+        await renderSettings(boardId);
+        showToast('Label supprimé');
+      });
+      actions.appendChild(editLbl);
+      actions.appendChild(delLbl);
+      el.appendChild(actions);
+      labelList.appendChild(el);
+    });
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+document.getElementById('settings-save-btn').addEventListener('click', async () => {
+  if (!activeBoardId) { showToast('Aucun board sélectionné', 'error'); return; }
+  const title = document.getElementById('settings-board-name').value.trim();
+  if (!title) { showToast('Le nom du board est requis', 'error'); return; }
+  try {
+    await api.updateBoard(activeBoardId, { title, description: document.getElementById('settings-board-desc').value.trim() });
+    showToast('Board mis à jour');
+  } catch (err) { showToast(err.message, 'error'); }
+});
+
+document.getElementById('settings-add-col').addEventListener('click', async () => {
+  const title = await showDialog('Nouvelle colonne', { input: true });
+  if (!title) return;
+  try {
+    await api.createColumn(activeBoardId, { title: title.trim() });
+    await renderSettings(activeBoardId);
+    showToast('Colonne ajoutée');
+  } catch (err) { showToast(err.message, 'error'); }
+});
+
+document.getElementById('settings-add-label').addEventListener('click', async () => {
+  const name = await showDialog('Nouveau label', { input: true });
+  if (!name) return;
+  const color = await showDialog('Couleur du label', { input: true, inputType: 'color', inputValue: '#8fbc8f' });
+  if (!color) return;
+  try {
+    await api.createLabel(activeBoardId, { name: name.trim(), color: color.trim() });
+    await renderSettings(activeBoardId);
+    showToast('Label ajouté');
+  } catch (err) { showToast(err.message, 'error'); }
+});
+
+document.getElementById('settings-del-board-btn').addEventListener('click', async () => {
+  if (!activeBoardId) return;
+  const ok = await showDialog('Confirmation', { message: 'Supprimer définitivement ce board et toutes ses données ?' });
+  if (!ok) return;
+  try {
+    await api.deleteBoard(activeBoardId);
+    activeBoardId = null;
+    document.getElementById('nav-board').textContent = 'Board';
+    navigate('dashboard');
+    renderDashboard();
+    showToast('Board supprimé');
+  } catch (err) { showToast(err.message, 'error'); }
+});
+
+async function renderProfile() {
+  try { await api.getMe(); } catch (e) { /* ignore */ }
+  const user = getUser();
+  if (!user) return;
+  document.getElementById('profile-avatar').textContent = getInit(user.name);
+  document.getElementById('profile-name-display').textContent = user.name;
+  document.getElementById('profile-email-display').textContent = user.email;
+  document.getElementById('profile-name').value = user.name;
+  document.getElementById('profile-email').value = user.email;
+  ['profile-pw-current','profile-pw-new','profile-pw-confirm'].forEach(id => document.getElementById(id).value = '');
+}
+
+document.getElementById('profile-save-btn').addEventListener('click', async () => {
+  const user = getUser();
+  if (!user) return;
+  const name = document.getElementById('profile-name').value.trim();
+  const email = document.getElementById('profile-email').value.trim();
+  if (!name || !email) { showToast('Nom et email requis', 'error'); return; }
+  const data = { name, email };
+  const pwCur = document.getElementById('profile-pw-current').value;
+  const pwNew = document.getElementById('profile-pw-new').value;
+  const pwCfm = document.getElementById('profile-pw-confirm').value;
+  if (pwCur || pwNew || pwCfm) {
+    if (!pwCur) { showToast('Mot de passe actuel requis', 'error'); return; }
+    if (pwNew !== pwCfm) { showToast('Les nouveaux mots de passe ne correspondent pas', 'error'); return; }
+    if (pwNew.length < 8) { showToast('Minimum 8 caractères', 'error'); return; }
+    data.password = pwNew;
+  }
+  try {
+    await api.updateMe(data);
+    renderProfile();
+    showToast('Profil mis à jour');
+  } catch (err) { showToast(err.message, 'error'); }
+});
+</script>
+</body>
+</html>
