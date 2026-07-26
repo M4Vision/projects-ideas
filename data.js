@@ -23,6 +23,7 @@ const projectsData = [
 			{ id: 'glass', name: 'Glass', desc: 'Glassmorphism, fond flou, transparence, bordures subtiles', file: 'protask/templates/glass/index.html' },
 			{ id: 'corporate', name: 'Corporate', desc: 'Design professionnel bleu/gris, tons sobres, Inter', file: 'protask/templates/corporate/index.html' },
 			{ id: 'forest', name: 'Forest', desc: 'Verts profonds, bois, ambiance sous-bois', file: 'protask/templates/forest/index.html' },
+			{ id: 'gold-noir', name: 'Gold & Noir', desc: 'Noir profond, accents dorés, élégance', file: 'protask/templates/gold-noir/index.html' },
 		],
 	},
 	{
