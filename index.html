@@ -1,149 +1,475 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Projets Web — Portfolio d'entraînement</title>
-<script src="data.js"></script>
-<style>
-:root {
-  --bg: #0A0A0A; --fg: #EDEDED; --border: #232323;
-  --accent: #3B82F6; --accent-hover: #2563EB;
-  --card: #141414; --card-hover: #1A1A1A;
-  --text-secondary: #888;
-  --radius: 8px; --shadow: 0 0 0 1px var(--border);
-}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--fg);min-height:100vh}
-.header{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;gap:16px}
-.header h1{font-size:18px;font-weight:600}
-.header .nav{display:flex;gap:4px;flex-wrap:wrap}
-.header .nav a{padding:6px 14px;border-radius:var(--radius);font-size:13px;color:var(--text-secondary);text-decoration:none;cursor:pointer;transition:all .15s}
-.header .nav a:hover,.header .nav a.active{color:var(--fg);background:var(--card)}
-.header .utils{display:flex;gap:8px;align-items:center;margin-left:auto}
-.viewport-btns{display:flex;gap:4px}
-.viewport-btn{padding:6px 10px;border-radius:var(--radius);font-size:11px;font-family:monospace;border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;transition:all .15s}
-.viewport-btn:hover,.viewport-btn.active{color:var(--fg);border-color:var(--accent);background:var(--card)}
-.main{display:flex;height:calc(100vh - 57px)}
-.sidebar{width:260px;border-right:1px solid var(--border);padding:16px;overflow-y:auto;flex-shrink:0}
-.sidebar h2{font-size:11px;text-transform:uppercase;color:var(--text-secondary);letter-spacing:1px;margin-bottom:12px}
-.project-group{margin-bottom:24px}
-.project-group .project-title{font-size:14px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 8px;border-radius:var(--radius);transition:all .15s}
-.project-group .project-title:hover{background:var(--card)}
-.project-group .project-title .icon{font-size:16px}
-.theme-list{list-style:none;margin-left:4px}
-.theme-list li{padding:6px 8px 6px 28px;font-size:13px;border-radius:var(--radius);cursor:pointer;color:var(--text-secondary);transition:all .15s;position:relative}
-.theme-list li:hover{color:var(--fg);background:var(--card)}
-.theme-list li.active{color:var(--accent);background:var(--card)}
-.theme-list li.active::before{content:'';position:absolute;left:8px;top:50%;transform:translateY(-50%);width:3px;height:16px;background:var(--accent);border-radius:2px}
-.preview{flex:1;display:flex;flex-direction:column;padding:12px;background:#000}
-.preview .info-bar{display:flex;align-items:center;gap:12px;padding:8px 12px;margin-bottom:8px;background:var(--card);border-radius:var(--radius);font-size:13px;color:var(--text-secondary)}
-.preview .info-bar strong{color:var(--fg)}
-.preview .info-bar a{color:var(--accent);text-decoration:none}
-.preview .info-bar a:hover{text-decoration:underline}
-.preview iframe{flex:1;width:100%;border:1px solid var(--border);border-radius:var(--radius);background:#fff;transition:width .3s}
-.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
-.status-dot.green{background:#22C55E}
-.status-dot.yellow{background:#EAB308}
-@media(max-width:768px){.sidebar{display:none}.header .nav{display:none}.header h1{font-size:14px}}
-</style>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Projets Web — Portfolio d'entraînement</title>
+	<script src="data.js"></script>
+	<style>
+		:root {
+			--bg: #0A0A0A;
+			--fg: #EDEDED;
+			--border: #232323;
+			--accent: #3B82F6;
+			--accent-hover: #2563EB;
+			--card: #141414;
+			--card-hover: #1A1A1A;
+			--text-secondary: #888;
+			--radius: 8px;
+			--shadow: 0 0 0 1px var(--border);
+		}
+
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+			scrollbar-width: thin;
+			scrollbar-color: #555 transparent
+		}
+		*::-webkit-scrollbar{width:8px;height:8px}
+		*::-webkit-scrollbar-track{background:transparent}
+		*::-webkit-scrollbar-thumb{background:#555;border-radius:4px}
+		*::-webkit-scrollbar-thumb:hover{background:#777}
+		*::-webkit-scrollbar-corner{background:transparent}
+
+		body {
+			font-family: system-ui, -apple-system, sans-serif;
+			background: var(--bg);
+			color: var(--fg);
+			min-height: 100vh
+		}
+
+		.header {
+			position: sticky;
+			top: 0;
+			z-index: 100;
+			background: var(--bg);
+			border-bottom: 1px solid var(--border);
+			padding: 12px 24px;
+			display: flex;
+			align-items: center;
+			gap: 16px
+		}
+
+		.header h1 {
+			font-size: 18px;
+			font-weight: 600
+		}
+
+		.header .nav {
+			display: flex;
+			gap: 4px;
+			flex-wrap: wrap
+		}
+
+		.header .nav a {
+			padding: 6px 14px;
+			border-radius: var(--radius);
+			font-size: 13px;
+			color: var(--text-secondary);
+			text-decoration: none;
+			cursor: pointer;
+			transition: all .15s
+		}
+
+		.header .nav a:hover,
+		.header .nav a.active {
+			color: var(--fg);
+			background: var(--card)
+		}
+
+		.header .utils {
+			display: flex;
+			gap: 8px;
+			align-items: center;
+			margin-left: auto
+		}
+
+		.viewport-btns {
+			display: flex;
+			gap: 4px
+		}
+
+		.viewport-btn {
+			padding: 6px 10px;
+			border-radius: var(--radius);
+			font-size: 11px;
+			font-family: monospace;
+			border: 1px solid var(--border);
+			background: transparent;
+			color: var(--text-secondary);
+			cursor: pointer;
+			transition: all .15s
+		}
+
+		.viewport-btn:hover,
+		.viewport-btn.active {
+			color: var(--fg);
+			border-color: var(--accent);
+			background: var(--card)
+		}
+
+		.main {
+			display: flex;
+			height: calc(100vh - 57px)
+		}
+
+		.sidebar {
+			width: 260px;
+			border-right: 1px solid var(--border);
+			padding: 16px;
+			overflow-y: auto;
+			flex-shrink: 0
+		}
+
+		.sidebar h2 {
+			font-size: 11px;
+			text-transform: uppercase;
+			color: var(--text-secondary);
+			letter-spacing: 1px;
+			margin-bottom: 12px
+		}
+
+		.project-group {
+			margin-bottom: 24px
+		}
+
+		.project-group .project-title {
+			font-size: 14px;
+			font-weight: 600;
+			margin-bottom: 8px;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			cursor: pointer;
+			padding: 6px 8px;
+			border-radius: var(--radius);
+			transition: all .15s
+		}
+
+		.project-group .project-title:hover {
+			background: var(--card)
+		}
+
+		.project-group .project-title .icon {
+			font-size: 16px
+		}
+
+		.theme-list {
+			list-style: none;
+			margin-left: 4px
+		}
+
+		.theme-list li {
+			padding: 6px 8px 6px 28px;
+			font-size: 13px;
+			border-radius: var(--radius);
+			cursor: pointer;
+			color: var(--text-secondary);
+			transition: all .15s;
+			position: relative
+		}
+
+		.theme-list li:hover {
+			color: var(--fg);
+			background: var(--card)
+		}
+
+		.theme-list li.active {
+			color: var(--accent);
+			background: var(--card)
+		}
+
+		.theme-list li.active::before {
+			content: '';
+			position: absolute;
+			left: 8px;
+			top: 50%;
+			transform: translateY(-50%);
+			width: 3px;
+			height: 16px;
+			background: var(--accent);
+			border-radius: 2px
+		}
+
+		.preview {
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+			padding: 12px;
+			background: #000;
+			min-width: 0
+		}
+
+		.preview .info-bar {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			padding: 8px 12px;
+			margin-bottom: 8px;
+			background: var(--card);
+			border-radius: var(--radius);
+			font-size: 13px;
+			color: var(--text-secondary)
+		}
+
+		.preview .info-bar strong {
+			color: var(--fg)
+		}
+
+		.preview .info-bar a {
+			color: var(--accent);
+			text-decoration: none
+		}
+
+		.preview .info-bar a:hover {
+			text-decoration: underline
+		}
+
+		.preview iframe {
+			flex: 1;
+			width: 100%;
+			border: 1px solid var(--border);
+			border-radius: var(--radius);
+			background: #fff;
+			transition: width .3s
+		}
+
+		.status-dot {
+			width: 8px;
+			height: 8px;
+			border-radius: 50%;
+			display: inline-block;
+			margin-right: 6px
+		}
+
+		.status-dot.green {
+			background: #22C55E
+		}
+
+		.status-dot.yellow {
+			background: #EAB308
+		}
+
+		.code-panel {
+			display: none;
+			flex: 1;
+			flex-direction: column;
+			background: var(--card);
+			border-radius: var(--radius);
+			overflow: hidden
+		}
+
+		.code-panel.active {
+			display: flex
+		}
+
+		.code-toolbar {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 8px 16px;
+			background: var(--bg);
+			border-bottom: 1px solid var(--border);
+			color: var(--text-secondary);
+			font-size: 13px
+		}
+
+		.code-content {
+			flex: 1;
+			overflow: auto;
+			padding: 16px;
+			font-size: 13px;
+			line-height: 1.6
+		}
+
+		.code-content pre {
+			margin: 0;
+			tab-size: 2;
+			white-space: pre;
+			word-break: normal;
+			background: transparent !important
+		}
+
+		.code-content code {
+			font-family: 'Fira Code', 'Courier New', monospace;
+			white-space: pre;
+			counter-reset: line
+		}
+
+		.code-content .line::before {
+			counter-increment: line;
+			content: counter(line);
+			display: inline-block;
+			width: 4ch;
+			text-align: right;
+			padding-right: 1.5em;
+			color: var(--text-secondary);
+			user-select: none
+		}
+
+		.view-btn {
+			padding: 4px 10px;
+			font-size: 11px;
+			border: 1px solid var(--border);
+			border-radius: 4px;
+			background: transparent;
+			color: var(--text-secondary);
+			cursor: pointer;
+			transition: all .15s;
+			white-space: nowrap
+		}
+
+		.view-btn:hover,
+		.view-btn.active {
+			color: var(--fg);
+			border-color: var(--accent);
+			background: var(--card)
+		}
+
+		.preview .info-bar .nav-views {
+			display: flex;
+			gap: 4px;
+			margin-left: auto
+		}
+
+		@media(max-width:768px) {
+			.sidebar {
+				display: none
+			}
+
+			.header .nav {
+				display: none
+			}
+
+			.header h1 {
+				font-size: 14px
+			}
+		}
+
+		#codeContent>pre {
+			overflow-x: auto;
+		}
+	</style>
 </head>
+
 <body>
-<div class="header">
-  <h1>🏗️ Projets d'entraînement</h1>
-  <div class="nav" id="projectNav"></div>
-  <div class="utils">
-    <div class="viewport-btns">
-      <button class="viewport-btn" data-width="100%" onclick="setViewport('100%')">XL</button>
-      <button class="viewport-btn" data-width="1024px" onclick="setViewport('1024px')">LG</button>
-      <button class="viewport-btn" data-width="768px" onclick="setViewport('768px')">MD</button>
-      <button class="viewport-btn" data-width="480px" onclick="setViewport('480px')">SM</button>
-      <button class="viewport-btn" data-width="375px" onclick="setViewport('375px')">XS</button>
-    </div>
-  </div>
-</div>
-<div class="main">
-  <div class="sidebar" id="sidebar"></div>
-  <div class="preview" id="preview">
-    <div class="info-bar" id="infoBar">
-      <span id="statusInfo">Sélectionnez un projet et un thème pour commencer</span>
-    </div>
-    <iframe id="previewFrame"></iframe>
-  </div>
-</div>
+	<div class="header">
+		<h1>🏗️ Projets d'entraînement</h1>
+		<div class="nav" id="projectNav"></div>
+		<div class="utils">
+			<div class="viewport-btns">
+				<button class="viewport-btn" data-width="100%" onclick="setViewport('100%')">XL</button>
+				<button class="viewport-btn" data-width="1024px" onclick="setViewport('1024px')">LG</button>
+				<button class="viewport-btn" data-width="768px" onclick="setViewport('768px')">MD</button>
+				<button class="viewport-btn" data-width="480px" onclick="setViewport('480px')">SM</button>
+				<button class="viewport-btn" data-width="375px" onclick="setViewport('375px')">XS</button>
+			</div>
+		</div>
+	</div>
+	<div class="main">
+		<div class="sidebar" id="sidebar"></div>
+		<div class="preview" id="preview">
+			<div class="info-bar" id="infoBar">
+				<span id="statusInfo">Sélectionnez un projet et un thème pour commencer</span>
+				<div class="nav-views">
+					<button class="view-btn active" data-view="preview"
+						onclick="window.switchView('preview')">Preview</button>
+					<button class="view-btn" data-view="source" onclick="window.switchView('source')">Source</button>
+					<button class="view-btn" data-view="prd" onclick="window.switchView('prd')">PRD</button>
+					<button class="view-btn" data-view="openapi" onclick="window.switchView('openapi')">OpenAPI</button>
+					<button class="view-btn" data-view="apiclient" onclick="window.switchView('apiclient')">API</button>
+				</div>
+			</div>
+			<iframe id="previewFrame"></iframe>
+			<div class="code-panel" id="codePanel">
+				<div class="code-toolbar">
+					<span id="codeFileName"></span>
+					<button class="view-btn" onclick="window.switchView('preview')">✕ Retour</button>
+				</div>
+				<div class="code-content" id="codeContent">
+					<div style="color:#888;padding:20px">Charge…</div>
+				</div>
+			</div>
+		</div>
+	</div>
 
-<script>
-let currentProject = null;
-let currentTheme = null;
+	<script>
+		var currentProject = null;
+		var currentTheme = null;
 
-function init() {
-  renderNav();
-  // Auto-select first project
-  if (projectsData.length > 0) selectProject(projectsData[0].id);
-}
+		function init() {
+			renderNav();
+			// Auto-select first project
+			if (projectsData.length > 0) selectProject(projectsData[0].id);
+		}
 
-function renderNav() {
-  const nav = document.getElementById('projectNav');
-  nav.innerHTML = projectsData.map(p =>
-    `<a href="#" class="${p.id === currentProject?.id ? 'active' : ''}" onclick="selectProject('${p.id}')">${p.icon} ${p.name}</a>`
-  ).join('');
-}
+		function renderNav() {
+			const nav = document.getElementById('projectNav');
+			nav.innerHTML = projectsData.map(p =>
+				`<a href="#" class="${p.id === currentProject?.id ? 'active' : ''}" onclick="selectProject('${p.id}')">${p.icon} ${p.name}</a>`
+			).join('');
+		}
 
-function selectProject(projectId) {
-  currentProject = projectsData.find(p => p.id === projectId);
-  currentTheme = null;
-  renderNav();
-  renderSidebar();
-  // Auto-select first theme
-  if (currentProject && currentProject.themes.length > 0) {
-    selectTheme(currentProject.themes[0].id);
-  }
-}
+		function selectProject(projectId) {
+			currentProject = projectsData.find(p => p.id === projectId);
+			currentTheme = null;
+			renderNav();
+			renderSidebar();
+			// Auto-select first theme
+			if (currentProject && currentProject.themes.length > 0) {
+				selectTheme(currentProject.themes[0].id);
+			}
+		}
 
-function renderSidebar() {
-  const sidebar = document.getElementById('sidebar');
-  if (!currentProject) { sidebar.innerHTML = ''; return; }
-  sidebar.innerHTML = `
+		function renderSidebar() {
+			const sidebar = document.getElementById('sidebar');
+			if (!currentProject) { sidebar.innerHTML = ''; return; }
+			sidebar.innerHTML = `
     <h2>${currentProject.icon} ${currentProject.name}</h2>
     <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">${currentProject.description}</p>
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px">
-      <a href="${currentProject.docs}" target="_blank" style="padding:4px 10px;font-size:11px;border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);text-decoration:none">📄 PRD</a>
-      <a href="${currentProject.openapi}" target="_blank" style="padding:4px 10px;font-size:11px;border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);text-decoration:none">🔌 OpenAPI</a>
-      <a href="${currentProject.demoApi}" target="_blank" style="padding:4px 10px;font-size:11px;border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);text-decoration:none">🔌 API Client</a>
+      <button onclick="window.switchView('prd')" style="padding:4px 10px;font-size:11px;border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);background:transparent;cursor:pointer">📄 PRD</button>
+      <button onclick="window.switchView('openapi')" style="padding:4px 10px;font-size:11px;border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);background:transparent;cursor:pointer">🔌 OpenAPI</button>
+      <button onclick="window.switchView('apiclient')" style="padding:4px 10px;font-size:11px;border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);background:transparent;cursor:pointer">🔌 API Client</button>
     </div>
     <h2 style="margin-top:8px">Thèmes</h2>
     <ul class="theme-list">
       ${currentProject.themes.map(t =>
-        `<li class="${t.id === currentTheme?.id ? 'active' : ''}" onclick="selectTheme('${t.id}')">
+				`<li class="${t.id === currentTheme?.id ? 'active' : ''}" onclick="selectTheme('${t.id}')">
           <span class="status-dot green"></span>${t.name}
           <br><small style="color:var(--text-secondary);font-size:11px">${t.desc}</small>
         </li>`
-      ).join('')}
+			).join('')}
     </ul>
   `;
-}
+		}
 
-function selectTheme(themeId) {
-  currentTheme = currentProject.themes.find(t => t.id === themeId);
-  renderSidebar();
-  if (currentTheme) {
-    const iframe = document.getElementById('previewFrame');
-    iframe.src = currentTheme.file;
-    document.getElementById('statusInfo').innerHTML =
-      `<strong>${currentProject.name}</strong> — ${currentTheme.name} <span style="color:var(--text-secondary)">| ${currentTheme.desc}</span>`;
-  }
-}
+		function selectTheme(themeId) {
+			currentTheme = currentProject.themes.find(t => t.id === themeId);
+			renderSidebar();
+			window.switchView('preview');
+			if (currentTheme) {
+				const iframe = document.getElementById('previewFrame');
+				iframe.src = currentTheme.file;
+				document.getElementById('statusInfo').innerHTML =
+					`<strong>${currentProject.name}</strong> — ${currentTheme.name} <span style="color:var(--text-secondary)">| ${currentTheme.desc}</span>`;
+			}
+		}
 
-function setViewport(width) {
-  const iframe = document.getElementById('previewFrame');
-  iframe.style.width = width;
-  // Update active button
-  document.querySelectorAll('.viewport-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.width === width);
-  });
-}
+		function setViewport(width) {
+			const iframe = document.getElementById('previewFrame');
+			iframe.style.width = width;
+			document.querySelectorAll('.viewport-btn').forEach(b => {
+				b.classList.toggle('active', b.dataset.width === width);
+			});
+		}
 
-init();
-</script>
+		init();
+	</script>
+	<script type="module" src="./viewer.js"></script>
+	</script>
 </body>
+
 </html>

@@ -5,7 +5,7 @@
  * Modifier ce fichier pour ajouter un projet ou un template
  */
 
-const projectsData = [
+var projectsData = [
 	{
 		id: 'protask',
 		name: 'ProTask',
