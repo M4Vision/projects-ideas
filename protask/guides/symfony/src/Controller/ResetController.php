@@ -10,8 +10,9 @@ class ResetController
     {
         $conn = $em->getConnection();
         foreach (['comments','invitations','cards','labels','project_columns','boards','users'] as $table) {
-            $conn->executeStatement("DELETE FROM $table");
+            $conn->executeStatement("DELETE FROM \"$table\"");
         }
+        $conn->executeStatement("DELETE FROM sqlite_sequence");
         $seedService->load();
         return new JsonResponse(['success' => true]);
     }

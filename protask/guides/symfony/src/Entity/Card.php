@@ -10,7 +10,7 @@ class Card
     #[ORM\Id, ORM\GeneratedValue, ORM\Column] private ?int $id = null;
     #[ORM\Column(length: 200)] private string $title;
     #[ORM\Column(type: 'text', nullable: true)] private ?string $description = null;
-    #[ORM\Column(type: 'integer')] private int $order;
+    #[ORM\Column(name: '`order`', type: 'integer')] private int $order;
     #[ORM\ManyToOne(targetEntity: ProjectColumn::class, inversedBy: 'cards'), ORM\JoinColumn(nullable: false)]
     private ProjectColumn $column;
     #[ORM\Column(type: 'date', nullable: true)] private ?\DateTimeInterface $dueDate = null;

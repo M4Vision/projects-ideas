@@ -38,6 +38,7 @@ class Board
     public function setDescription(?string $d): self { $this->description = $d; return $this; }
     public function getColor(): ?string { return $this->color; }
     public function setColor(?string $color): self { $this->color = $color; return $this; }
+    public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
     public function getCategories(): ?array { return $this->categories; }
     public function setCategories(?array $c): self { $this->categories = $c; return $this; }
     public function getMemberIds(): array { return $this->memberIds; }

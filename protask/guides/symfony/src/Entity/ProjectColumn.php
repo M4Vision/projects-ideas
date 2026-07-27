@@ -9,7 +9,7 @@ class ProjectColumn
 {
     #[ORM\Id, ORM\GeneratedValue, ORM\Column] private ?int $id = null;
     #[ORM\Column(length: 200)] private string $title;
-    #[ORM\Column(type: 'integer')] private int $order;
+    #[ORM\Column(name: '`order`', type: 'integer')] private int $order;
     #[ORM\ManyToOne(targetEntity: Board::class, inversedBy: 'columns'), ORM\JoinColumn(nullable: false)]
     private Board $board;
     #[ORM\Column(length: 7, nullable: true)] private ?string $color = null;

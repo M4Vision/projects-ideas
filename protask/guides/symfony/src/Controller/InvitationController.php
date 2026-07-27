@@ -77,10 +77,14 @@ class InvitationController
         return new JsonResponse(null, 204);
     }
 
-    public function removeMember(int $boardId, int $userId): JsonResponse
+    public function removeMember(int $boardId, int $userId, Request $request): JsonResponse
     {
         $board = $this->em->getRepository(Board::class)->find($boardId);
         if (!$board) return new JsonResponse(['error' => 'Board introuvable.'], 404);
+        $currentUserId = $request->attributes->get('_user_id');
+        if ($board->getOwner()->getId() !== $currentUserId) {
+            return new JsonResponse(['error' => 'Seul le propriétaire peut retirer un membre.'], 403);
+        }
         $ids = $board->getMemberIds();
         $key = array_search($userId, $ids);
         if ($key === false) return new JsonResponse(null, 204);

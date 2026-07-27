@@ -1,9 +1,11 @@
 doctrine:
     dbal:
         url: '%env(DATABASE_URL)%'
+        driver: pdo_sqlite
     orm:
         auto_generate_proxy_classes: true
         enable_lazy_ghost_objects: true
+        enable_native_lazy_objects: true
         auto_mapping: true
         mappings:
             App:
