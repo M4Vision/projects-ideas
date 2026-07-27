@@ -1,0 +1,144 @@
+api_auth_register:
+    path: /api/auth/register
+    controller: App\Controller\AuthController::register
+    methods: POST
+api_auth_login:
+    path: /api/auth/login
+    controller: App\Controller\AuthController::login
+    methods: POST
+api_auth_logout:
+    path: /api/auth/logout
+    controller: App\Controller\AuthController::logout
+    methods: POST
+api_users_me:
+    path: /api/users/me
+    controller: App\Controller\UserController::me
+    methods: GET
+api_users_me_update:
+    path: /api/users/me
+    controller: App\Controller\UserController::updateMe
+    methods: PUT
+api_users_show:
+    path: /api/users/{id}
+    controller: App\Controller\UserController::show
+    methods: GET
+api_boards_list:
+    path: /api/boards
+    controller: App\Controller\BoardController::index
+    methods: GET
+api_boards_create:
+    path: /api/boards
+    controller: App\Controller\BoardController::create
+    methods: POST
+api_boards_show:
+    path: /api/boards/{id}
+    controller: App\Controller\BoardController::show
+    methods: GET
+api_boards_update:
+    path: /api/boards/{id}
+    controller: App\Controller\BoardController::update
+    methods: PUT
+api_boards_delete:
+    path: /api/boards/{id}
+    controller: App\Controller\BoardController::delete
+    methods: DELETE
+api_columns_list:
+    path: /api/boards/{boardId}/columns
+    controller: App\Controller\ColumnController::index
+    methods: GET
+api_columns_create:
+    path: /api/boards/{boardId}/columns
+    controller: App\Controller\ColumnController::create
+    methods: POST
+api_columns_reorder:
+    path: /api/columns/reorder
+    controller: App\Controller\ColumnController::reorder
+    methods: PUT
+api_columns_update:
+    path: /api/columns/{id}
+    controller: App\Controller\ColumnController::update
+    methods: PUT
+api_columns_delete:
+    path: /api/columns/{id}
+    controller: App\Controller\ColumnController::delete
+    methods: DELETE
+api_cards_list:
+    path: /api/columns/{columnId}/cards
+    controller: App\Controller\CardController::index
+    methods: GET
+api_cards_create:
+    path: /api/columns/{columnId}/cards
+    controller: App\Controller\CardController::create
+    methods: POST
+api_cards_show:
+    path: /api/cards/{id}
+    controller: App\Controller\CardController::show
+    methods: GET
+api_cards_update:
+    path: /api/cards/{id}
+    controller: App\Controller\CardController::update
+    methods: PATCH
+api_cards_delete:
+    path: /api/cards/{id}
+    controller: App\Controller\CardController::delete
+    methods: DELETE
+api_cards_reorder:
+    path: /api/cards/reorder
+    controller: App\Controller\CardController::reorder
+    methods: POST
+api_cards_move:
+    path: /api/cards/{id}/move
+    controller: App\Controller\CardController::move
+    methods: POST
+api_labels_list:
+    path: /api/boards/{boardId}/labels
+    controller: App\Controller\LabelController::index
+    methods: GET
+api_labels_create:
+    path: /api/boards/{boardId}/labels
+    controller: App\Controller\LabelController::create
+    methods: POST
+api_labels_update:
+    path: /api/labels/{id}
+    controller: App\Controller\LabelController::update
+    methods: PATCH
+api_labels_delete:
+    path: /api/labels/{id}
+    controller: App\Controller\LabelController::delete
+    methods: DELETE
+api_comments_list:
+    path: /api/cards/{cardId}/comments
+    controller: App\Controller\CommentController::index
+    methods: GET
+api_comments_create:
+    path: /api/cards/{cardId}/comments
+    controller: App\Controller\CommentController::create
+    methods: POST
+api_comments_delete:
+    path: /api/comments/{id}
+    controller: App\Controller\CommentController::delete
+    methods: DELETE
+api_invitations_list:
+    path: /api/boards/{boardId}/invitations
+    controller: App\Controller\InvitationController::index
+    methods: GET
+api_invitations_create:
+    path: /api/boards/{boardId}/invitations
+    controller: App\Controller\InvitationController::create
+    methods: POST
+api_invitations_update:
+    path: /api/invitations/{id}
+    controller: App\Controller\InvitationController::update
+    methods: PATCH
+api_invitations_delete:
+    path: /api/invitations/{id}
+    controller: App\Controller\InvitationController::delete
+    methods: DELETE
+api_boards_remove_member:
+    path: /api/boards/{boardId}/members/{userId}
+    controller: App\Controller\InvitationController::removeMember
+    methods: DELETE
+api_reset:
+    path: /api/_reset
+    controller: App\Controller\ResetController::reset
+    methods: POST
