@@ -1,13 +1,15 @@
 import { describe, beforeAll, afterAll, beforeEach, it, expect } from 'vitest'
-import { serve } from '@hono/node-server'
-import app from './server.js'
 
+const API_BASE_URL = process.env.API_BASE_URL || ''
 const PORT = parseInt(process.env.API_PORT || '3001')
-const BASE = `http://localhost:${PORT}/api`
+const BASE = API_BASE_URL || `http://localhost:${PORT}/api`
 
 let server
 
 beforeAll(async () => {
+  if (API_BASE_URL) return
+  const { serve } = await import('@hono/node-server')
+  const { default: app } = await import('./server.js')
   return new Promise((resolve) => {
     server = serve({ fetch: app.fetch, port: PORT }, resolve)
   })
