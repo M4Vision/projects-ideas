@@ -14,6 +14,7 @@
     "test:e2e:headed": "SLOW_MO=300 playwright test --headed",
     "test:api": "vitest run protask/api/e2e.spec.js",
     "test:guide:symfony": "API_BASE_URL=http://localhost:8002/api vitest run protask/api/e2e.spec.js",
+    "test:guide:laravel": "API_BASE_URL=http://localhost:8000/api vitest run protask/api/e2e.spec.js",
     "dev:api": "node protask/api/start.js",
     "preview-report": "playwright show-report"
   },
@@ -30,6 +31,7 @@
   "dependencies": {
     "@hono/node-server": "^2.0.11",
     "hono": "^4.12.32",
+    "marked": "^18.0.7",
     "shiki": "^4.3.1"
   }
 }
