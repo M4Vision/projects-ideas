@@ -78,6 +78,7 @@ class CardController extends Controller
         if (isset($data['dueDate'])) $card->due_date = $data['dueDate'];
         if (isset($data['assigneeId'])) $card->assignee_id = $data['assigneeId'];
         if (isset($data['labelIds'])) $card->label_ids = $data['labelIds'];
+        if (isset($data['labels'])) $card->label_ids = $data['labels'];
         $card->save();
 
         return response()->json($card->fresh()->load('assignee', 'comments.author')->toArray());
@@ -109,7 +110,12 @@ class CardController extends Controller
             }
         }
 
-        return response()->json(['success' => true]);
+        $cards = Card::with('assignee', 'comments.author')
+            ->orderBy('order_column')
+            ->get()
+            ->toArray();
+
+        return response()->json($cards);
     }
 
     public function move(int $id, Request $request): JsonResponse

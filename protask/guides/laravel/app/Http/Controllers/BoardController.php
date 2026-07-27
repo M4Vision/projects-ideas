@@ -17,7 +17,9 @@ class BoardController extends Controller
             ->with('columns.cards')
             ->get();
 
-        return response()->json($boards->toArray());
+        $data = $boards->map(fn($b) => array_merge($b->toArray(), ['members' => $b->getMembers()]));
+
+        return response()->json($data);
     }
 
     public function store(Request $request): JsonResponse
