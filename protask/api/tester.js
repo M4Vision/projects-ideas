@@ -626,12 +626,16 @@ function defineTests() {
   })
 }
 
-export async function runTests(baseUrl) {
+export async function runTests(baseUrl, allowedCategories) {
   _categories = []
   _abort = false
   _baseUrl = baseUrl.replace(/\/$/, '')
 
   defineTests()
+
+  if (Array.isArray(allowedCategories)) {
+    _categories = _categories.filter(category => allowedCategories.includes(category.name))
+  }
 
   const startTime = performance.now()
 
