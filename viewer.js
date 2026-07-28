@@ -487,6 +487,48 @@ function renderLesson(index) {
   codeContent.appendChild(container)
 }
 
+const CATEGORY_API_MAP = {
+  Authentification: [
+    'POST /api/auth/register — créer un compte',
+    'POST /api/auth/login — se connecter',
+    'POST /api/auth/logout — se déconnecter',
+  ],
+  Boards: [
+    'GET /api/boards — lister les tableaux',
+    'POST /api/boards — créer un tableau',
+    'GET /api/boards/:id — consulter un tableau',
+    'PUT /api/boards/:id — modifier un tableau',
+    'DELETE /api/boards/:id — supprimer un tableau',
+  ],
+  Colonnes: [
+    'POST /api/boards/:id/columns — ajouter une colonne',
+    'PUT /api/columns/reorder — réordonner les colonnes',
+    'PATCH /api/columns/:id/move-card/:cardId — déplacer une carte',
+  ],
+  Cartes: [
+    'POST /api/columns/:id/cards — créer une carte',
+    'PATCH /api/cards/:id/move — déplacer une carte',
+    'PUT /api/cards/:id — modifier une carte',
+    'DELETE /api/cards/:id — supprimer une carte',
+  ],
+  Labels: [
+    'POST /api/boards/:id/labels — créer un label',
+    'GET /api/boards/:id/labels — lister les labels',
+    'PUT /api/labels/:id — modifier un label',
+    'DELETE /api/labels/:id — supprimer un label',
+  ],
+  Commentaires: [
+    'POST /api/cards/:id/comments — ajouter un commentaire',
+    'GET /api/cards/:id/comments — lister les commentaires',
+    'DELETE /api/comments/:id — supprimer un commentaire',
+  ],
+  Invitations: [
+    'POST /api/boards/:id/invitations — inviter un membre',
+    'GET /api/boards/:id/invitations — lister les invitations',
+    'PATCH /api/invitations/:id — répondre à une invitation',
+  ],
+}
+
 window._runLessonChecks = async function () {
   const manifest = _learningManifest
   const lesson = manifest.lessons[_currentLessonIndex]
@@ -496,25 +538,59 @@ window._runLessonChecks = async function () {
   if (!url.startsWith('http')) return
 
   const checkBtn = document.querySelector('.lp-check-btn')
-  checkBtn.textContent = 'Vérification en cours…'
+  const existing = document.querySelector('.lp-check-result')
+  if (existing) existing.remove()
+
+  const planRoutes = lesson.testCategories.flatMap(cat =>
+    (CATEGORY_API_MAP[cat] || []).map(r => `<li>${r}</li>`)
+  )
+  document.querySelector('.lp-check-section')?.insertAdjacentHTML('beforeend', `<div class="lp-check-result lp-check-plan">
+    <p class="lp-check-plan-title">🧪 Vérification de l'étape ${lesson.id.replace(/^\d+-/, '')}</p>
+    <p class="lp-check-plan-desc">Les APIs suivantes vont être testées automatiquement sur ton serveur Adonis&nbsp;:</p>
+    <ul class="lp-check-plan-routes">${planRoutes.join('')}</ul>
+  </div>`)
+
+  checkBtn.textContent = 'Lancement des tests…'
   checkBtn.disabled = true
 
   const result = await runTests(url, lesson.testCategories)
 
-  checkBtn.textContent = 'Vérifier mon étape'
+  checkBtn.textContent = 'Re-vérifier mon étape'
   checkBtn.disabled = false
 
-  let html = `<div class="lp-check-result"><p>Cette vérification couvre : ${lesson.testCategories.join(', ')}</p>`
+  let html = `<div class="lp-check-result">`
+  result.categories.forEach(cat => {
+    const passed = cat.tests.filter(t => t.status === 'pass').length
+    const total = cat.tests.length
+    const allOk = passed === total
+    html += `<details class="lp-check-category" ${allOk ? '' : 'open'}>
+      <summary class="lp-check-category-summary">
+        <span class="${allOk ? 'lp-check-pass' : 'lp-check-fail'}">${allOk ? '✅' : '❌'}</span>
+        ${cat.name}
+        <span class="lp-check-category-count">${passed}/${total}</span>
+      </summary>
+      <ul class="lp-check-test-list">`
+    cat.tests.forEach(t => {
+      const ok = t.status === 'pass'
+      html += `<li class="lp-check-test-item ${ok ? 'lp-check-test-pass' : 'lp-check-test-fail'}">
+        <span>${ok ? '✅' : '❌'}</span>
+        ${t.name}
+        ${t.duration ? `<span class="lp-check-test-duration">${t.duration}ms</span>` : ''}
+        ${t.error ? `<div class="lp-check-test-error">${t.error.message}</div>` : ''}
+      </li>`
+    })
+    html += `</ul></details>`
+  })
   const allPassed = result.summary.failed === 0 && result.summary.errors === 0
-  if (allPassed) {
-    html += `<p class="lp-check-pass">✅ ${result.summary.passed}/${result.summary.total} tests réussis</p>`
-  } else {
-    html += `<p class="lp-check-fail">❌ ${result.summary.failed} test(s) échoué(s)</p>`
-    html += `<p class="lp-check-hint">Relis l'étape « Vérifie maintenant » puis compare ton fichier avec le code complet.</p>`
-  }
+  html += `<p class="lp-check-summary ${allPassed ? 'lp-check-pass' : 'lp-check-fail'}">
+    ${allPassed ? '✅ Tous les tests sont verts' : '❌ Certains tests ont échoué'}
+    — ${result.summary.passed}/${result.summary.total} réussis
+    ${!allPassed ? `<span class="lp-check-hint">Relis l'étape et compare avec le code complet.</span>` : ''}
+  </p>`
   html += '</div>'
-  const existing = document.querySelector('.lp-check-result')
-  if (existing) existing.remove()
+
+  const oldResult = document.querySelector('.lp-check-result')
+  if (oldResult) oldResult.remove()
   document.querySelector('.lp-check-section')?.insertAdjacentHTML('beforeend', html)
 }
 

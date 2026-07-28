@@ -224,7 +224,7 @@ test.describe('Guide learning path — step verification', () => {
     expect(calls[0].allowedCategories).toEqual(['Authentification', 'Boards'])
   })
 
-  test('verification result displays categories covered in the DOM', async ({ page }) => {
+  test('verification result shows summary with pass count', async ({ page }) => {
     const body = stubTesterModule(false)
     await page.route(/\/protask\/api\/tester\.js(\?.*)?$/, (route) => route.fulfill({ body, contentType: 'application/javascript' }))
 
@@ -234,9 +234,8 @@ test.describe('Guide learning path — step verification', () => {
     await page.locator('.lp-nav-btn').nth(5).click()
     await page.fill('#lpApiUrl', 'http://localhost:3333/api')
     await page.click('.lp-check-btn')
-    await expect(page.locator('.lp-check-result')).toBeVisible()
-    await expect(page.locator('.lp-check-result')).toContainText('Authentification')
-    await expect(page.locator('.lp-check-result')).toContainText('Boards')
+    await expect(page.locator('.lp-check-summary')).toBeVisible({ timeout: 8000 })
+    await expect(page.locator('.lp-check-summary')).toContainText('1/1')
   })
 })
 
