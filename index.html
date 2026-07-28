@@ -1021,7 +1021,23 @@
 			color: var(--fg);
 			display: flex;
 			align-items: center;
-			gap: 6px
+			gap: 6px;
+			list-style: none
+		}
+
+		.lp-check-category-summary::-webkit-details-marker {
+			display: none
+		}
+
+		.lp-check-category-summary::before {
+			content: '▶';
+			font-size: 10px;
+			color: var(--text-secondary);
+			transition: transform .15s
+		}
+
+		.lp-check-category[open] > .lp-check-category-summary::before {
+			content: '▼'
 		}
 
 		.lp-check-category-count {
