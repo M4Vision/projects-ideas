@@ -495,6 +495,136 @@
 		#codeContent>pre {
 			overflow-x: auto;
 		}
+
+		.tester-bar {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			padding: 12px 0;
+			border-bottom: 1px solid var(--border);
+			margin-bottom: 16px;
+			flex-wrap: wrap
+		}
+		.tester-bar label {
+			font-size: 13px;
+			color: var(--text-secondary);
+			white-space: nowrap
+		}
+		.tester-input {
+			flex: 1;
+			min-width: 200px;
+			padding: 7px 12px;
+			font-size: 13px;
+			font-family: monospace;
+			background: var(--bg);
+			border: 1px solid var(--border);
+			border-radius: 4px;
+			color: var(--fg);
+			outline: none
+		}
+		.tester-input:focus {
+			border-color: var(--accent)
+		}
+		.tester-progress-bar {
+			height: 4px;
+			background: var(--border);
+			border-radius: 2px;
+			overflow: hidden
+		}
+		.tester-progress-fill {
+			height: 100%;
+			background: var(--accent);
+			border-radius: 2px;
+			width: 0;
+			transition: width .3s
+		}
+		.tester-category {
+			margin-bottom: 8px;
+			border: 1px solid var(--border);
+			border-radius: 6px;
+			overflow: hidden
+		}
+		.tester-category-header {
+			padding: 10px 14px;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			font-size: 14px;
+			font-weight: 600;
+			user-select: none;
+			background: var(--card)
+		}
+		.tester-category-header:hover {
+			background: var(--card-hover)
+		}
+		.tester-category-header.pass {
+			color: #22C55E
+		}
+		.tester-category-header.fail {
+			color: #EF4444
+		}
+		.tester-category-count {
+			margin-left: auto;
+			font-size: 12px;
+			font-weight: 400
+		}
+		.tester-test-list {
+			border-top: 1px solid var(--border)
+		}
+		.tester-test {
+			padding: 8px 14px 8px 36px;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			font-size: 13px;
+			flex-wrap: wrap
+		}
+		.tester-test.fail {
+			background: rgba(239,68,68,.05)
+		}
+		.tester-test.error {
+			background: rgba(234,179,8,.05)
+		}
+		.tester-test-name {
+			flex: 1
+		}
+		.tester-test-duration {
+			color: var(--text-secondary);
+			font-size: 11px;
+			font-family: monospace
+		}
+		.tester-test-error {
+			width: 100%;
+			margin-top: 4px;
+			padding: 6px 10px;
+			background: rgba(239,68,68,.1);
+			border-radius: 4px;
+			color: #e06c75;
+			font-size: 12px;
+			font-family: monospace;
+			white-space: pre-wrap;
+			word-break: break-all
+		}
+		.tester-summary {
+			margin-top: 16px;
+			padding: 14px;
+			border-radius: 6px;
+			font-size: 14px;
+			line-height: 1.6
+		}
+		.tester-summary.pass {
+			background: rgba(34,197,94,.08);
+			color: #22C55E
+		}
+		.tester-summary.fail {
+			background: rgba(239,68,68,.08);
+			color: #EF4444
+		}
+		.tester-status-icon {
+			font-size: 14px;
+			line-height: 1
+		}
 	</style>
 </head>
 
@@ -525,6 +655,7 @@
 					<button class="view-btn" data-view="openapi" onclick="window.switchView('openapi')">OpenAPI</button>
 					<button class="view-btn" data-view="apiclient" onclick="window.switchView('apiclient')">API</button>
 					<button class="view-btn" data-view="guide" onclick="window.switchView('guide')">Guide</button>
+					<button class="view-btn" data-view="tester" onclick="window.switchView('tester')">Testeur</button>
 				</div>
 			</div>
 			<iframe id="previewFrame"></iframe>

@@ -2,6 +2,7 @@ import { createHighlighter } from 'shiki'
 import MarkdownIt from 'markdown-it'
 import mermaid from 'mermaid'
 import { mountOpenApiViewer } from './openapi-viewer.js'
+import { runTests } from './protask/api/tester.js'
 
 mermaid.initialize({ startOnLoad: false, theme: 'dark' })
 
@@ -25,6 +26,7 @@ async function ensureHL() {
   }
   return _highlighter
 }
+window.__getHL = () => _highlighter
 
 const md = new MarkdownIt({
   html: true,
@@ -69,6 +71,15 @@ async function applyMermaid() {
 
 async function getHL() {
   return ensureHL()
+}
+
+async function fetchRawJs(path) {
+  const res = await fetch(path + '?raw')
+  if (!res.ok) throw new Error('HTTP ' + res.status)
+  const text = await res.text()
+  const prefix = 'export default '
+  if (text.startsWith(prefix)) return JSON.parse(text.slice(prefix.length))
+  return text
 }
 
 function fileLabel(view) {
@@ -208,12 +219,39 @@ window.switchView = async function (view) {
     document.getElementById('guideToggle').textContent = 'Source'
   }
 
+  if (view === 'tester') {
+    content.style.display = 'block'
+    document.getElementById('apiContainer').style.display = 'none'
+    const defaultUrl = window.location.origin + '/api'
+    content.innerHTML = `
+      <div class="tester-container">
+        <div class="tester-bar">
+          <label>API Base URL</label>
+          <input type="text" id="testerUrl" value="${defaultUrl}" class="tester-input" />
+          <button class="view-btn" id="testerRunBtn" onclick="window._runTests()">Lancer les tests</button>
+          <button class="view-btn" id="testerAbortBtn" style="display:none" onclick="window._abortTests()">Arrêter</button>
+        </div>
+        <div id="testerProgress" style="display:none;padding:12px 0">
+          <div class="tester-progress-bar"><div class="tester-progress-fill" id="testerProgressFill"></div></div>
+          <div style="margin-top:6px;font-size:13px;color:var(--text-secondary)" id="testerProgressText">Exécution…</div>
+        </div>
+        <div id="testerResults"></div>
+      </div>
+    `
+    return
+  }
+
   try {
     const url = fileUrl(view)
     if (!url) throw new Error('Aucun fichier sélectionné')
-    const res = await fetch(url)
-    if (!res.ok) throw new Error('HTTP ' + res.status)
-    const code = await res.text()
+    let code
+    if (view === 'apiclient') {
+      code = await fetchRawJs(url)
+    } else {
+      const res = await fetch(url)
+      if (!res.ok) throw new Error('HTTP ' + res.status)
+      code = await res.text()
+    }
 
     if (view === 'prd') {
       _prdSource = code
@@ -251,4 +289,77 @@ window.switchView = async function (view) {
     content.innerHTML =
       '<div style="color:#e06c75;padding:20px">Erreur\u00a0: ' + e.message + '</div>'
   }
+}
+
+window._runTests = async function () {
+  const url = document.getElementById('testerUrl').value.trim()
+  if (!url.startsWith('http')) {
+    document.getElementById('testerResults').innerHTML = '<div style="color:#e06c75;padding:12px">URL invalide. L\'URL doit commencer par http:// ou https://</div>'
+    return
+  }
+  const runBtn = document.getElementById('testerRunBtn')
+  const abortBtn = document.getElementById('testerAbortBtn')
+  const progress = document.getElementById('testerProgress')
+  const fill = document.getElementById('testerProgressFill')
+  const progressText = document.getElementById('testerProgressText')
+  const results = document.getElementById('testerResults')
+
+  runBtn.style.display = 'none'
+  abortBtn.style.display = 'inline-block'
+  progress.style.display = 'block'
+  results.innerHTML = ''
+
+  const t0 = performance.now()
+  const result = await runTests(url)
+  const elapsed = Math.round(performance.now() - t0)
+
+  runBtn.style.display = 'inline-block'
+  abortBtn.style.display = 'none'
+  progress.style.display = 'none'
+
+  let html = ''
+  for (const cat of result.categories) {
+    const passed = cat.tests.filter(t => t.status === 'pass').length
+    const total = cat.tests.length
+    const allPassed = passed === total
+    html += `<details class="tester-category" ${allPassed ? '' : 'open'}>`
+    html += `<summary class="tester-category-header ${allPassed ? 'pass' : 'fail'}">`
+    html += `<span class="tester-status-icon">${allPassed ? '✅' : '❌'}</span>`
+    html += `<span class="tester-category-name">${cat.name}</span>`
+    html += `<span class="tester-category-count">${passed}/${total}</span>`
+    html += `</summary>`
+    html += `<div class="tester-test-list">`
+    for (const test of cat.tests) {
+      html += `<div class="tester-test ${test.status}">`
+      html += `<span class="tester-status-icon">${test.status === 'pass' ? '✅' : test.status === 'fail' ? '❌' : '⚠️'}</span>`
+      html += `<span class="tester-test-name">${test.name}</span>`
+      html += `<span class="tester-test-duration">${test.duration}ms</span>`
+      if (test.error) {
+        html += `<div class="tester-test-error">${test.error.message}</div>`
+      }
+      html += `</div>`
+    }
+    html += `</div>`
+    html += `</details>`
+  }
+
+  const s = result.summary
+  const allPass = s.failed === 0 && s.errors === 0
+  html += `
+    <div class="tester-summary ${allPass ? 'pass' : 'fail'}">
+      <strong>${allPass ? '✅ Tous les tests passent' : '❌ Des tests ont échoué'}</strong><br>
+      ${s.passed}/${s.total} réussis
+      ${s.failed > 0 ? `, ${s.failed} échec(s)` : ''}
+      ${s.errors > 0 ? `, ${s.errors} erreur(s)` : ''}
+      — Durée : ${s.duration}ms (${elapsed}ms temps réel)
+    </div>
+  `
+
+  results.innerHTML = html
+}
+
+window._abortTests = async function () {
+  const { abortTests } = await import('./protask/api/tester.js')
+  abortTests()
+  document.getElementById('testerAbortBtn').style.display = 'none'
 }
