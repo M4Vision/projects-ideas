@@ -5,6 +5,10 @@ Chaque projet a sa logique métier centralisée dans une mock API, et peut s'aff
 
 ## Language
 
+**Guide pédagogique**:
+Parcours progressif qui fait construire un Projet en expliquant les notions et les choix au moment où ils deviennent utiles.
+_Avoid_: Tutoriel, documentation
+
 **Template**:
 Fichier HTML autonome (CSS + JS inline) qui implémente l'interface utilisateur complète d'un projet dans un thème visuel donné. Consomme la mock API centralisée.
 _Avoid_: Page, vue, SPA
