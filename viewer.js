@@ -473,9 +473,9 @@ function renderLesson(index) {
         ${manifest.lessons.slice(0, index + 1).map((l, i) => `
           <p><strong>Leçon ${i + 1} — ${l.title}</strong></p>
           <ul class="lp-file-list">
-            ${l.files.map(f => `<li class="lp-file-item"><a href="/${l.checkpoint}${f}" target="_blank" class="lp-checkpoint-link">${f}</a></li>`).join('')}
+            ${l.files.map(f => `<li class="lp-file-item"><a href="#" onclick="window._viewCheckpointFile('/${l.checkpoint}${f}');return false" class="lp-checkpoint-link">${f}</a></li>`).join('')}
           </ul>
-          <p><a href="/${l.checkpoint}README.md" class="lp-checkpoint-link" target="_blank">📄 Lire le README du checkpoint →</a></p>
+          <p><a href="#" onclick="window._viewCheckpointFile('/${l.checkpoint}README.md');return false" class="lp-checkpoint-link">📄 Voir le README du checkpoint →</a></p>
         `).join('')}
       </details>
     </div>`
@@ -552,4 +552,75 @@ function renderQuiz(quiz) {
 
   fieldset.appendChild(reveal)
   return fieldset
+}
+
+const LANG_MAP = {
+  js: 'javascript', ts: 'typescript', tsx: 'tsx', jsx: 'jsx',
+  json: 'json', md: 'markdown', css: 'css', html: 'html',
+  bash: 'bash', sh: 'bash', yaml: 'yaml', yml: 'yaml',
+  sql: 'sql', env: 'text', gitignore: 'text',
+}
+
+window._viewCheckpointFile = async function (path) {
+  const center = document.querySelector('.lp-center')
+  if (!center) return
+  try {
+    const res = await fetch(path)
+    if (!res.ok) throw new Error('HTTP ' + res.status)
+    const code = await res.text()
+    const ext = path.split('.').pop() || 'text'
+    const lang = LANG_MAP[ext] || 'text'
+    const hl = await getHL()
+    const highlighted = hl.codeToHtml(code, { lang, theme: 'github-dark' })
+    const fileName = path.split('/').pop()
+    center.innerHTML = `<div class="lp-file-toolbar">
+      <button class="view-btn" onclick="window._backToLesson()">← Retour à la leçon</button>
+      <span class="lp-file-toolbar-name">${fileName}</span>
+      <button class="view-btn" onclick="window._copyCheckpointCode()">📋 Copier</button>
+      <button class="view-btn" onclick="window._downloadCheckpointCode()">⬇ Télécharger</button>
+    </div>
+    <div class="lp-file-viewer">${highlighted}</div>`
+    window.__checkpointCode = code
+    window.__checkpointFileName = fileName
+  } catch (e) {
+    center.innerHTML = `<div class="lp-file-toolbar">
+      <button class="view-btn" onclick="window._backToLesson()">← Retour à la leçon</button>
+    </div>
+    <div style="color:#e06c75;padding:20px">Erreur : ${e.message}</div>`
+  }
+}
+
+window._backToLesson = function () {
+  if (typeof _learningManifest !== 'undefined' && _learningManifest) {
+    renderLesson(_currentLessonIndex)
+  }
+}
+
+window._copyCheckpointCode = async function () {
+  const code = window.__checkpointCode
+  if (!code) return
+  try {
+    await navigator.clipboard.writeText(code)
+    const btn = document.querySelector('.lp-file-toolbar [onclick*="copy"]')
+    if (btn) {
+      const orig = btn.textContent
+      btn.textContent = '✅ Copié !'
+      setTimeout(() => { btn.textContent = orig }, 2000)
+    }
+  } catch {
+    const btn = document.querySelector('.lp-file-toolbar [onclick*="copy"]')
+    if (btn) btn.textContent = '❌ Erreur'
+  }
+}
+
+window._downloadCheckpointCode = function () {
+  const code = window.__checkpointCode
+  const name = window.__checkpointFileName || 'checkpoint.txt'
+  if (!code) return
+  const blob = new Blob([code], { type: 'text/plain' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = name
+  a.click()
+  URL.revokeObjectURL(a.href)
 }
