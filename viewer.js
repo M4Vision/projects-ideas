@@ -565,7 +565,7 @@ window._viewCheckpointFile = async function (path) {
   const center = document.querySelector('.lp-center')
   if (!center) return
   try {
-    const res = await fetch(path + '?raw')
+    const res = await fetch(path)
     if (!res.ok) throw new Error('HTTP ' + res.status)
     const code = await res.text()
     const ext = path.split('.').pop() || 'text'
