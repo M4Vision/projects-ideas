@@ -22,8 +22,16 @@ export class InvitationsService {
     if (!board) throw new NotFoundException('Board introuvable.');
     if (!body.email || !body.email.includes('@')) throw new BadRequestException('Email invalide.');
 
+    const targetUser = await this.users.findOne({ where: { email: body.email } });
+    if (targetUser && targetUser.id === userId) {
+      throw new BadRequestException('Vous ne pouvez pas vous inviter.');
+    }
+    if (!targetUser) {
+      throw new NotFoundException('Utilisateur non trouvé.');
+    }
+
     const existing = await this.invitations.findOne({ where: { boardId, email: body.email } });
-    if (existing) throw new BadRequestException('Une invitation existe déjà pour cet email.');
+    if (existing) throw new BadRequestException('Une invitation est déjà en attente pour cet email.');
 
     return this.invitations.save({
       boardId,
@@ -36,6 +44,11 @@ export class InvitationsService {
   async update(id: number, body: any, userId: number): Promise<any> {
     const invitation = await this.invitations.findOne({ where: { id } });
     if (!invitation) throw new NotFoundException('Invitation introuvable.');
+
+    const targetUser = await this.users.findOne({ where: { email: invitation.email } });
+    if (targetUser && targetUser.id !== userId) {
+      throw new ForbiddenException('Vous ne pouvez pas répondre à cette invitation.');
+    }
 
     const board = await this.boards.findOne({ where: { id: invitation.boardId } });
     if (!board) throw new NotFoundException('Board introuvable.');

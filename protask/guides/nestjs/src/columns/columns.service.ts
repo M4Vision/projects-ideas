@@ -9,44 +9,51 @@ export class ColumnsService {
     @InjectRepository(ProjectColumn) private columns: Repository<ProjectColumn>,
   ) {}
 
-  async findByBoard(boardId: number): Promise<ProjectColumn[]> {
-    return this.columns.find({
+  private formatColumn(col: any): any {
+    return { ...col, order: col.orderColumn };
+  }
+
+  async findByBoard(boardId: number): Promise<any[]> {
+    const cols = await this.columns.find({
       where: { boardId },
       order: { orderColumn: 'ASC' },
     });
+    return cols.map(c => this.formatColumn(c));
   }
 
-  async create(boardId: number, body: any): Promise<ProjectColumn> {
+  async create(boardId: number, body: any): Promise<any> {
     const max = await this.columns.findOne({
       where: { boardId },
       order: { orderColumn: 'DESC' },
     });
     const order = (max?.orderColumn ?? -1) + 1;
-    return this.columns.save({
+    const col = await this.columns.save({
       title: body.title || '',
       boardId,
       orderColumn: order,
       color: body.color || '#6B7280',
+      description: body.description || '',
     });
+    return this.formatColumn(col);
   }
 
-  async reorder(body: { id: number; order: number }[]): Promise<ProjectColumn[]> {
+  async reorder(body: { id: number; order: number }[]): Promise<any[]> {
     const ids = body.map(b => b.id);
     const cols = await this.columns.find({ where: { id: In(ids) } });
     for (const col of cols) {
       const found = body.find(b => b.id === col.id);
       if (found) col.orderColumn = found.order;
     }
-    return this.columns.save(cols);
+    return (await this.columns.save(cols)).map(c => this.formatColumn(c));
   }
 
-  async update(id: number, body: any): Promise<ProjectColumn> {
+  async update(id: number, body: any): Promise<any> {
     const col = await this.columns.findOne({ where: { id } });
     if (!col) throw new NotFoundException('Colonne introuvable.');
     if (body.title !== undefined) col.title = body.title;
     if (body.color !== undefined) col.color = body.color;
     if (body.description !== undefined) col.description = body.description;
-    return this.columns.save(col);
+    return this.formatColumn(await this.columns.save(col));
   }
 
   async delete(id: number): Promise<void> {

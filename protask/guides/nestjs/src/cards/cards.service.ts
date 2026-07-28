@@ -23,7 +23,7 @@ export class CardsService {
       order: { orderColumn: 'ASC' },
       relations: { comments: { author: true }, assignee: true },
     });
-    return cards.map(c => this.formatCard(c));
+    return Promise.all(cards.map(c => this.formatCard(c)));
   }
 
   async create(columnId: number, body: any): Promise<any> {
@@ -55,7 +55,7 @@ export class CardsService {
       relations: { comments: { author: true }, assignee: true },
     });
     if (!card) throw new NotFoundException('Carte introuvable.');
-    return this.formatCard(card);
+    return await this.formatCard(card);
   }
 
   async update(id: number, body: any): Promise<any> {
@@ -65,9 +65,10 @@ export class CardsService {
     if (body.description !== undefined) card.description = body.description;
     if (body.dueDate !== undefined) card.dueDate = body.dueDate;
     if (body.assigneeId !== undefined) card.assigneeId = body.assigneeId;
-    if (body.labelIds !== undefined) card.labelIds = body.labelIds;
+    if (body.labels !== undefined) card.labelIds = body.labels;
+    else if (body.labelIds !== undefined) card.labelIds = body.labelIds;
     await this.cards.save(card);
-    return this.findOne(id);
+    return this.formatCard(await this.cards.findOne({ where: { id }, relations: { comments: { author: true }, assignee: true } }));
   }
 
   async delete(id: number): Promise<void> {
@@ -84,7 +85,7 @@ export class CardsService {
       if (found) card.orderColumn = found.order;
     }
     await this.cards.save(cards);
-    return cards.map(c => this.formatCard(c));
+    return Promise.all(cards.map(c => this.formatCard(c)));
   }
 
   async move(id: number, body: any): Promise<any> {
@@ -93,10 +94,10 @@ export class CardsService {
     if (body.columnId !== undefined) card.columnId = body.columnId;
     if (body.order !== undefined) card.orderColumn = body.order;
     await this.cards.save(card);
-    return this.findOne(id);
+    return await this.findOne(id);
   }
 
-  private formatCard(card: any): any {
+  private async formatCard(card: any): Promise<any> {
     const data: any = { ...card };
     if (data.assignee) data.assignee = data.assignee.toResponse();
     if (data.comments) {
@@ -104,6 +105,11 @@ export class CardsService {
         ...c,
         author: c.author?.toResponse?.() ?? c.author,
       }));
+    }
+    if (data.labelIds && data.labelIds.length > 0) {
+      data.labels = await this.labels.find({ where: { id: In(data.labelIds) } });
+    } else {
+      data.labels = [];
     }
     data.order = data.orderColumn;
     delete data.orderColumn;

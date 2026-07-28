@@ -310,27 +310,28 @@
 		}
 
 		.markdown-body {
-			color: var(--fg);
+			color: #eee;
 			line-height: 1.8;
-			max-width: 800px;
-			padding: 8px 0
+			max-width: 720px;
+			margin: 0 auto;
+			padding: 32px 24px 64px
 		}
 		.markdown-body h1,
 		.markdown-body h2,
 		.markdown-body h3,
 		.markdown-body h4 {
-			color: var(--fg);
+			color: #9d7cd8;
 			margin: 1.5em 0 .5em;
 			font-weight: 600
 		}
 		.markdown-body h1 {
 			font-size: 1.8em;
-			border-bottom: 1px solid var(--border);
+			border-bottom: 1px solid #404040;
 			padding-bottom: .3em
 		}
 		.markdown-body h2 {
 			font-size: 1.4em;
-			border-bottom: 1px solid var(--border);
+			border-bottom: 1px solid #404040;
 			padding-bottom: .3em
 		}
 		.markdown-body h3 {
@@ -339,42 +340,67 @@
 		.markdown-body p {
 			margin: 0 0 1em
 		}
-		.markdown-body ul,
-		.markdown-body ol {
+		.markdown-body ul {
 			padding-left: 2em;
 			margin: 0 0 1em
 		}
+		.markdown-body ul li::marker {
+			color: #fab283
+		}
+		.markdown-body ol {
+			padding-left: 2em;
+			margin: 0 0 1em;
+			color: #56b6c2
+		}
 		.markdown-body li {
-			margin: .25em 0
+			margin: .25em 0;
+			color: #eee
 		}
 		.markdown-body code {
-			background: var(--card-hover);
+			background: #1a1a1a;
 			padding: 2px 6px;
 			border-radius: 3px;
-			font-size: .9em
+			font-size: .9em;
+			color: #7fd88f
 		}
 		.markdown-body pre {
-			background: var(--bg);
+			background: #0a0a0a;
 			padding: 16px;
-			border-radius: var(--radius);
+			border-radius: 6px;
 			overflow-x: auto;
-			margin: 0 0 1em
+			margin: 0 0 1em;
+			border: 1px solid #333
 		}
 		.markdown-body pre code {
 			background: none;
 			padding: 0;
-			font-size: .85em
+			font-size: .85em;
+			color: #eee
+		}
+		.markdown-body .shiki {
+			background: #0a0a0a !important;
+			padding: 16px;
+			border-radius: 6px;
+			overflow-x: auto;
+			margin: 0 0 1em;
+			border: 1px solid #333;
+			line-height: 1.5
+		}
+		.markdown-body .shiki code {
+			background: none;
+			padding: 0;
+			color: inherit
 		}
 		.markdown-body a {
-			color: var(--accent)
+			color: #fab283
 		}
 		.markdown-body a:hover {
 			text-decoration: underline
 		}
 		.markdown-body blockquote {
-			border-left: 3px solid var(--accent);
+			border-left: 3px solid #56b6c2;
 			padding-left: 1em;
-			color: var(--text-secondary);
+			color: #e5c07b;
 			margin: 0 0 1em
 		}
 		.markdown-body table {
@@ -384,21 +410,43 @@
 		}
 		.markdown-body th,
 		.markdown-body td {
-			border: 1px solid var(--border);
+			border: 1px solid #404040;
 			padding: 8px 12px;
-			text-align: left
+			text-align: left;
+			color: #eee
 		}
 		.markdown-body th {
-			background: var(--card)
+			background: #1a1a1a;
+			font-weight: 600;
+			color: #f5a742
 		}
 		.markdown-body hr {
 			border: none;
-			border-top: 1px solid var(--border);
+			border-top: 1px solid #808080;
 			margin: 1.5em 0
 		}
 		.markdown-body img {
 			max-width: 100%;
-			border-radius: var(--radius)
+			border-radius: 6px
+		}
+		.markdown-body strong {
+			color: #f5a742
+		}
+		.markdown-body em {
+			color: #e5c07b
+		}
+		.markdown-body .mermaid {
+			background: #0a0a0a;
+			border-radius: 6px;
+			padding: 16px;
+			margin: 0 0 1em;
+			overflow-x: auto;
+			border: 1px solid #333
+		}
+		.markdown-body .mermaid svg {
+			max-width: 100%;
+			display: block;
+			margin: 0 auto
 		}
 
 		#apiContainer {
@@ -476,6 +524,7 @@
 					<button class="view-btn" data-view="prd" onclick="window.switchView('prd')">PRD</button>
 					<button class="view-btn" data-view="openapi" onclick="window.switchView('openapi')">OpenAPI</button>
 					<button class="view-btn" data-view="apiclient" onclick="window.switchView('apiclient')">API</button>
+					<button class="view-btn" data-view="guide" onclick="window.switchView('guide')">Guide</button>
 				</div>
 			</div>
 			<iframe id="previewFrame"></iframe>
@@ -490,6 +539,7 @@
 						</span>
 						<button class="view-btn" id="prdToggle" style="display:none" onclick="window.togglePrdView()">Source</button>
 						<button class="view-btn" id="apiToggle" style="display:none" onclick="window.toggleApiView()">Source</button>
+						<button class="view-btn" id="guideToggle" style="display:none" onclick="window.toggleGuideView()">Source</button>
 						<button class="view-btn" onclick="window.switchView('preview')">✕ Retour</button>
 					</div>
 				</div>

@@ -19,9 +19,9 @@ export class BoardsService {
 
   async findAll(userId: number): Promise<any[]> {
     const allBoards = await this.boards.find({ relations: { columns: { cards: true } } });
-    return allBoards
+    return Promise.all(allBoards
       .filter(b => b.ownerId === userId || (b.memberIds || []).includes(userId))
-      .map(b => this.formatBoard(b));
+      .map(b => this.formatBoard(b)));
   }
 
   async create(userId: number, body: any): Promise<any> {
@@ -72,9 +72,12 @@ export class BoardsService {
     await this.boards.remove(board);
   }
 
-  private formatBoard(board: Board): any {
+  private async formatBoard(board: Board): Promise<any> {
     const data: any = { ...board };
+    const owner = await this.users.findOne({ where: { id: board.ownerId } });
     data.cardCount = (board as any).columns?.reduce((sum: number, c: any) => sum + (c.cards?.length || 0), 0) || 0;
+    data.members = owner ? [{ user: owner.toResponse(), role: 'owner' }] : [];
+    data.columns = (board as any).columns?.sort((a: any, b: any) => a.orderColumn - b.orderColumn).map((c: any) => ({ ...c, order: c.orderColumn })) || [];
     return data;
   }
 
@@ -88,7 +91,7 @@ export class BoardsService {
       if (u) members.push({ user: u.toResponse(), role: 'member' });
     }
     data.members = members;
-    data.columns = (board as any).columns?.sort((a: any, b: any) => a.orderColumn - b.orderColumn) || [];
+    data.columns = (board as any).columns?.sort((a: any, b: any) => a.orderColumn - b.orderColumn).map((c: any) => ({ ...c, order: c.orderColumn })) || [];
     return data;
   }
 }

@@ -32,11 +32,13 @@ export class CardsController {
   }
 
   @Post('cards/reorder')
+  @HttpCode(200)
   async reorder(@Body() body: any) {
     return this.cardsService.reorder(body);
   }
 
   @Post('cards/:id/move')
+  @HttpCode(200)
   async move(@Param('id') id: number, @Body() body: any) {
     return this.cardsService.move(id, body);
   }

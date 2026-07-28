@@ -12,6 +12,10 @@ var projectsData = [
 		tagline: 'Gestionnaire de tâches Kanban',
 		description: 'Un Trello-like pour gérer ses projets avec boards, colonnes, cartes, labels, commentaires et invitations.',
 		icon: '📋',
+		guides: [
+			{ name: 'NestJS', file: 'protask/guides/nestjs/index.md' },
+			{ name: 'AdonisJS', file: 'protask/guides/adonis/index.md' },
+		],
 		docs: '/protask/docs/PRD.md',
 		openapi: '/protask/docs/openapi.json',
 		demoApi: '/protask/api/client.js',
@@ -34,6 +38,7 @@ var projectsData = [
 		tagline: 'Marketplace E-commerce',
 		description: 'Marketplace où chaque utilisateur peut acheter et vendre. Wallet virtuel, stock, bonus quotidien, admin.',
 		icon: '🛒',
+		guides: [],
 		docs: '/shopflow/docs/PRD.md',
 		openapi: '/shopflow/docs/openapi.json',
 		demoApi: '/shopflow/demo-api.js',

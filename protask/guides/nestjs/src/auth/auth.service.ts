@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
@@ -12,16 +12,18 @@ export class AuthService {
       throw new BadRequestException('Champs requis : name, email, password.');
     }
     const existing = await this.users.findOne({ where: { email: body.email } });
-    if (existing) throw new ConflictException('Cet email est déjà utilisé.');
+    if (existing) throw new BadRequestException('Cet email est déjà utilisé.');
 
-    const user = await this.users.save({
+    await this.users.save({
+      id: body.id || undefined,
       name: body.name,
       email: body.email,
       password: body.password,
       avatar: body.avatar ?? '',
     });
 
-    return { user: user.toResponse(), token: `token-${user.id}` };
+    const user = await this.users.findOne({ where: { email: body.email } });
+    return { user: user!.toResponse(), token: `token-${user!.id}` };
   }
 
   async login(body: any) {
