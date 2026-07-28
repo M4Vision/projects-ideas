@@ -108,6 +108,59 @@ test.describe('Guide learning path — viewer', () => {
   })
 })
 
+test.describe('Guide learning path — quizzes', () => {
+
+  test('lesson 03 renders quiz questions with choices', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForFunction(() => !!window.switchView)
+    await page.evaluate(() => { window.switchView('guide'); window.switchGuideTo(3) })
+    await page.locator('.lp-nav-btn').nth(2).click()
+    await expect(page.locator('.lp-quiz')).toHaveCount(2)
+    await expect(page.locator('.lp-quiz-legend')).toHaveCount(2)
+    const choiceBtns = page.locator('.lp-quiz-choice')
+    const count = await choiceBtns.count()
+    expect(count).toBe(7)
+  })
+
+  test('wrong answer shows explanation and does not block navigation', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForFunction(() => !!window.switchView)
+    await page.evaluate(() => { window.switchView('guide'); window.switchGuideTo(3) })
+    await page.locator('.lp-nav-btn').nth(2).click()
+    const firstWrong = page.locator('.lp-quiz-choice').first()
+    await firstWrong.click()
+    const reveal = page.locator('.lp-quiz-reveal')
+    await expect(reveal.first()).toBeVisible()
+    await expect(reveal.first()).not.toHaveText('')
+    const navBtn4 = page.locator('.lp-nav-btn').nth(3)
+    await expect(navBtn4).toBeEnabled()
+  })
+
+  test('correct answer shows Bonne intuition and explanation', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForFunction(() => !!window.switchView)
+    await page.evaluate(() => { window.switchView('guide'); window.switchGuideTo(3) })
+    await page.locator('.lp-nav-btn').nth(2).click()
+    const firstQuizChoiceBtns = page.locator('.lp-quiz').first().locator('.lp-quiz-choice')
+    const correctBtn = firstQuizChoiceBtns.first()
+    await correctBtn.click()
+    await expect(page.locator('.lp-quiz-reveal').first()).toContainText('Bonne intuition')
+    await expect(page.locator('.lp-quiz-reveal').first()).toContainText('Authorization')
+  })
+
+  test('no score or blocking state is rendered', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForFunction(() => !!window.switchView)
+    await page.evaluate(() => { window.switchView('guide'); window.switchGuideTo(3) })
+    await page.locator('.lp-nav-btn').nth(2).click()
+    await expect(page.locator('.lp-quiz')).toHaveCount(2)
+    const scoreElements = page.locator('.lp-quiz-score, [class*="progress"], [class*="percentage"]')
+    await expect(scoreElements).toHaveCount(0)
+    const checkBtn = page.locator('.lp-check-btn')
+    await expect(checkBtn).toBeEnabled()
+  })
+})
+
 test.describe('Guide learning path — step verification', () => {
 
   test('lesson 03 verification passes Authentification category to runTests', async ({ page }) => {

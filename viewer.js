@@ -442,6 +442,12 @@ function renderLesson(index) {
   const lessonFile = lesson.file
   fetch('/' + lessonFile).then(r => r.text()).then(async mdText => {
     contentDiv.innerHTML = await renderMarkdown(mdText)
+    if (lesson.quiz?.length) {
+      const quizDiv = document.createElement('div')
+      quizDiv.className = 'lp-quiz-section'
+      lesson.quiz.forEach(q => quizDiv.appendChild(renderQuiz(q)))
+      center.insertBefore(quizDiv, center.querySelector('.lp-check-section'))
+    }
   })
 
   center.innerHTML += `<div class="lp-check-section">
@@ -507,4 +513,40 @@ window._runLessonChecks = async function () {
   const existing = document.querySelector('.lp-check-result')
   if (existing) existing.remove()
   document.querySelector('.lp-check-section')?.insertAdjacentHTML('beforeend', html)
+}
+
+function renderQuiz(quiz) {
+  const fieldset = document.createElement('fieldset')
+  fieldset.className = 'lp-quiz'
+  const legend = document.createElement('legend')
+  legend.className = 'lp-quiz-legend'
+  legend.textContent = quiz.question
+  fieldset.appendChild(legend)
+
+  const reveal = document.createElement('div')
+  reveal.className = 'lp-quiz-reveal'
+  reveal.setAttribute('role', 'status')
+  reveal.style.display = 'none'
+
+  quiz.choices.forEach((choice, i) => {
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.className = 'lp-quiz-choice'
+    btn.textContent = choice
+    btn.setAttribute('aria-pressed', 'false')
+    btn.onclick = () => {
+      fieldset.querySelectorAll('.lp-quiz-choice').forEach(b => b.disabled = true)
+      btn.setAttribute('aria-pressed', 'true')
+      btn.classList.add(i === quiz.answer ? 'correct' : 'incorrect')
+      const prefix = i === quiz.answer ? '✅ Bonne intuition — ' : 'ℹ️ Regarde cette explication — '
+      const explanation = quiz.explanation || ''
+      const answerText = i === quiz.answer ? '' : `\n(Réponse correcte : ${quiz.choices[quiz.answer]})`
+      reveal.textContent = prefix + explanation + answerText
+      reveal.style.display = 'block'
+    }
+    fieldset.appendChild(btn)
+  })
+
+  fieldset.appendChild(reveal)
+  return fieldset
 }
