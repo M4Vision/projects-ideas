@@ -37,7 +37,9 @@
 			font-family: system-ui, -apple-system, sans-serif;
 			background: var(--bg);
 			color: var(--fg);
-			min-height: 100vh
+			min-height: 100vh;
+			display: flex;
+			flex-direction: column
 		}
 
 		.header {
@@ -112,7 +114,8 @@
 
 		.main {
 			display: flex;
-			height: calc(100vh - 57px)
+			flex: 1;
+			min-height: 0
 		}
 
 		.sidebar {
@@ -234,6 +237,80 @@
 			border-radius: var(--radius);
 			background: #fff;
 			transition: width .3s
+		}
+
+		.preview-frame-wrap {
+			flex: 1;
+			display: flex;
+			justify-content: center;
+			position: relative;
+			min-height: 0
+		}
+
+		.preview-frame-wrap iframe {
+			flex: 1;
+			max-width: 100%
+		}
+
+		.preview-overlay {
+			position: absolute;
+			inset: 0;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			background: var(--bg);
+			border: 1px solid var(--border);
+			border-radius: var(--radius);
+			z-index: 10;
+			opacity: 0;
+			pointer-events: none;
+			transition: opacity .2s
+		}
+
+		.preview-overlay.active {
+			opacity: 1;
+			pointer-events: auto
+		}
+
+		.preview-spinner {
+			width: 32px;
+			height: 32px;
+			border: 3px solid var(--border);
+			border-top-color: var(--accent);
+			border-radius: 50%;
+			animation: spin .7s linear infinite
+		}
+
+		@keyframes spin {
+			to { transform: rotate(360deg) }
+		}
+
+		.preview-error {
+			text-align: center;
+			padding: 24px
+		}
+
+		.preview-error p {
+			color: #e06c75;
+			margin-bottom: 12px;
+			font-size: 14px
+		}
+
+		.preview-retry {
+			padding: 8px 20px;
+			border-radius: var(--radius);
+			border: 1px solid var(--accent);
+			background: transparent;
+			color: var(--accent);
+			font-size: 13px;
+			cursor: pointer;
+			transition: all .15s
+		}
+
+		.preview-retry:hover {
+			background: var(--accent);
+			color: #fff
 		}
 
 		.status-dot {
@@ -472,10 +549,19 @@
 			background: var(--card)
 		}
 
-		.preview .info-bar .nav-views {
+		.nav-bar {
 			display: flex;
+			align-items: center;
 			gap: 4px;
-			margin-left: auto
+			padding: 6px 24px;
+			border-bottom: 1px solid var(--border);
+			background: var(--bg);
+			flex-shrink: 0
+		}
+
+		.nav-bar .view-btn {
+			padding: 4px 12px;
+			font-size: 12px
 		}
 
 		@media(max-width:768px) {
@@ -489,6 +575,18 @@
 
 			.header h1 {
 				font-size: 14px
+			}
+
+			.nav-bar {
+				overflow-x: auto;
+				gap: 2px;
+				padding: 6px 12px
+			}
+
+			.nav-bar .view-btn {
+				font-size: 11px;
+				padding: 4px 8px;
+				flex-shrink: 0
 			}
 		}
 
@@ -631,6 +729,318 @@
 			font-size: 14px;
 			line-height: 1
 		}
+
+		.sidebar-btn {
+			padding: 4px 10px;
+			font-size: 11px;
+			border: 1px solid var(--border);
+			border-radius: 4px;
+			color: var(--text-secondary);
+			background: transparent;
+			cursor: pointer;
+			transition: all .15s;
+			white-space: nowrap
+		}
+
+		.sidebar-btn:hover {
+			color: var(--fg);
+			border-color: var(--accent);
+			background: var(--card)
+		}
+
+		.learning-path {
+			display: flex;
+			flex-direction: column;
+			height: 100%;
+			overflow: hidden
+		}
+
+		.lp-nav {
+			display: flex;
+			gap: 4px;
+			padding: 8px 16px;
+			border-bottom: 1px solid var(--border);
+			overflow-x: auto;
+			flex-shrink: 0;
+			background: var(--bg)
+		}
+
+		.lp-nav-btn {
+			padding: 6px 14px;
+			font-size: 12px;
+			border: 1px solid var(--border);
+			border-radius: 6px;
+			background: var(--card);
+			color: var(--text-secondary);
+			cursor: pointer;
+			white-space: nowrap;
+			transition: all .15s
+		}
+
+		.lp-nav-btn.active {
+			background: var(--accent);
+			color: #fff;
+			border-color: var(--accent)
+		}
+
+		.lp-nav-btn:hover:not(.active) {
+			border-color: var(--accent);
+			color: var(--fg)
+		}
+
+		.lp-main {
+			display: flex;
+			flex: 1;
+			min-height: 0;
+			overflow: hidden
+		}
+
+		.lp-center {
+			flex: 1;
+			overflow-y: auto;
+			padding: 24px 32px;
+			min-width: 0
+		}
+
+		.lp-lesson-header {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			margin-bottom: 8px
+		}
+
+		.lp-lesson-title {
+			font-size: 20px;
+			font-weight: 600;
+			margin: 0;
+			color: var(--fg)
+		}
+
+		.lp-duration {
+			font-size: 12px;
+			padding: 2px 8px;
+			border-radius: 4px;
+			background: var(--card);
+			color: var(--text-secondary);
+			border: 1px solid var(--border);
+			flex-shrink: 0
+		}
+
+		.lp-summary {
+			font-size: 14px;
+			color: var(--text-secondary);
+			margin: 0 0 16px;
+			line-height: 1.5
+		}
+
+		.lp-objective {
+			padding: 12px 16px;
+			border-radius: 8px;
+			background: var(--card);
+			border: 1px solid var(--border);
+			margin-bottom: 20px
+		}
+
+		.lp-objective h3 {
+			font-size: 13px;
+			font-weight: 600;
+			margin: 0 0 4px;
+			color: var(--fg)
+		}
+
+		.lp-objective p {
+			font-size: 13px;
+			color: var(--text-secondary);
+			margin: 0;
+			line-height: 1.4
+		}
+
+		.lp-content {
+			font-size: 14px;
+			line-height: 1.6;
+			color: var(--fg)
+		}
+
+		.lp-content pre {
+			border-radius: 8px;
+			overflow-x: auto
+		}
+
+		.lp-content code {
+			font-size: 13px
+		}
+
+		.lp-content img {
+			max-width: 100%;
+			border-radius: 6px;
+			margin: 12px 0
+		}
+
+		.lp-check-section {
+			margin-top: 32px;
+			padding: 16px;
+			border-radius: 8px;
+			border: 1px solid var(--border);
+			background: var(--card)
+		}
+
+		.lp-url-label {
+			display: block;
+			font-size: 12px;
+			font-weight: 600;
+			color: var(--text-secondary);
+			margin-bottom: 4px
+		}
+
+		.lp-url-input {
+			width: 100%;
+			box-sizing: border-box;
+			margin-bottom: 10px;
+			font-size: 13px
+		}
+
+		.lp-check-btn {
+			padding: 8px 20px;
+			font-size: 13px
+		}
+
+		.lp-check-result {
+			margin-top: 12px;
+			padding: 12px;
+			border-radius: 6px;
+			background: var(--bg);
+			border: 1px solid var(--border)
+		}
+
+		.lp-check-result p {
+			margin: 0 0 4px;
+			font-size: 13px;
+			color: var(--text-secondary)
+		}
+
+		.lp-check-pass {
+			color: #5cb85c !important;
+			font-weight: 600
+		}
+
+		.lp-check-fail {
+			color: #e06c75 !important;
+			font-weight: 600
+		}
+
+		.lp-check-hint {
+			font-style: italic;
+			font-size: 12px !important
+		}
+
+		.lp-sidebar {
+			width: 260px;
+			flex-shrink: 0;
+			border-left: 1px solid var(--border);
+			padding: 20px;
+			overflow-y: auto;
+			background: var(--bg)
+		}
+
+		.lp-sidebar-title {
+			font-size: 13px;
+			font-weight: 600;
+			margin: 0 0 8px;
+			color: var(--fg)
+		}
+
+		.lp-file-list {
+			list-style: none;
+			padding: 0;
+			margin: 0 0 16px
+		}
+
+		.lp-file-item {
+			font-size: 12px;
+			font-family: monospace;
+			padding: 4px 8px;
+			border-radius: 4px;
+			color: var(--text-secondary);
+			background: var(--card);
+			margin-bottom: 4px;
+			word-break: break-all
+		}
+
+		.lp-checkpoint-section {
+			border-top: 1px solid var(--border);
+			padding-top: 16px
+		}
+
+		.lp-checkpoint-section h3 {
+			font-size: 13px;
+			font-weight: 600;
+			margin: 0 0 8px;
+			color: var(--fg)
+		}
+
+		.lp-checkpoint-details {
+			font-size: 13px;
+			color: var(--text-secondary)
+		}
+
+		.lp-checkpoint-details summary {
+			cursor: pointer;
+			font-weight: 500;
+			margin-bottom: 8px
+		}
+
+		.lp-checkpoint-details p {
+			margin: 0 0 6px;
+			font-size: 12px
+		}
+
+		.lp-checkpoint-link {
+			font-size: 12px;
+			color: var(--accent);
+			text-decoration: none
+		}
+
+		.lp-checkpoint-link:hover {
+			text-decoration: underline
+		}
+
+		@media(max-width: 768px) {
+			.lp-main {
+				flex-direction: column
+			}
+
+			.lp-nav {
+				padding: 6px 8px;
+				gap: 2px
+			}
+
+			.lp-nav-btn {
+				font-size: 11px;
+				padding: 4px 10px
+			}
+
+			.lp-center {
+				padding: 16px
+			}
+
+			.lp-sidebar {
+				width: 100%;
+				border-left: none;
+				border-top: 1px solid var(--border);
+				padding: 16px
+			}
+		}
+
+		@media(prefers-reduced-motion: reduce) {
+			*, *::before, *::after {
+				transition-duration: 0s !important;
+				animation-duration: 0s !important
+			}
+
+			.preview-spinner {
+				animation-duration: 1.4s !important
+			}
+		}
 	</style>
 </head>
 
@@ -648,30 +1058,39 @@
 			</div>
 		</div>
 	</div>
+	<div class="nav-bar">
+		<button class="view-btn active" data-view="preview"
+			onclick="window.switchView('preview')">Aperçu</button>
+		<button class="view-btn" data-view="source" onclick="window.switchView('source')">Source</button>
+		<button class="view-btn" data-view="prd" onclick="window.switchView('prd')">PRD</button>
+		<button class="view-btn" data-view="openapi" onclick="window.switchView('openapi')">OpenAPI</button>
+		<button class="view-btn" data-view="apiclient" onclick="window.switchView('apiclient')">API</button>
+		<button class="view-btn" data-view="guide" onclick="window.switchView('guide')">Guide</button>
+		<button class="view-btn" data-view="tester" onclick="window.switchView('tester')">Testeur</button>
+	</div>
 	<div class="main">
 		<div class="sidebar" id="sidebar"></div>
 		<div class="preview" id="preview">
 			<div class="info-bar" id="infoBar">
 				<span id="statusInfo">Sélectionnez un projet et un thème pour commencer</span>
-				<div class="nav-views">
-					<button class="view-btn active" data-view="preview"
-						onclick="window.switchView('preview')">Preview</button>
-					<button class="view-btn" data-view="source" onclick="window.switchView('source')">Source</button>
-					<button class="view-btn" data-view="prd" onclick="window.switchView('prd')">PRD</button>
-					<button class="view-btn" data-view="openapi" onclick="window.switchView('openapi')">OpenAPI</button>
-					<button class="view-btn" data-view="apiclient" onclick="window.switchView('apiclient')">API</button>
-					<button class="view-btn" data-view="guide" onclick="window.switchView('guide')">Guide</button>
-					<button class="view-btn" data-view="tester" onclick="window.switchView('tester')">Testeur</button>
-				</div>
 			</div>
-			<iframe id="previewFrame"></iframe>
+			<div class="preview-frame-wrap">
+				<div class="preview-overlay" id="previewOverlay">
+					<div class="preview-spinner" id="previewSpinner"></div>
+					<div class="preview-error" id="previewError" style="display:none">
+						<p id="previewErrorMsg">Impossible de charger l'aperçu</p>
+						<button class="preview-retry" onclick="window._retryPreview()">Réessayer</button>
+					</div>
+				</div>
+				<iframe id="previewFrame"></iframe>
+			</div>
 			<div class="code-panel" id="codePanel">
 				<div class="code-toolbar">
 					<span id="codeFileName"></span>
 					<div style="display:flex;gap:4px;align-items:center">
 						<span id="apiOptions" style="display:none;align-items:center;gap:8px;font-size:12px;color:var(--text-secondary)">
-							API: <input id="apiUrlInput" style="width:180px;padding:3px 8px;font-size:12px;background:var(--card);border:1px solid var(--border);border-radius:4px;color:var(--fg);outline:none" />
-							Token: <input id="apiTokenInput" style="width:160px;padding:3px 8px;font-size:12px;background:var(--card);border:1px solid var(--border);border-radius:4px;color:var(--fg);outline:none" placeholder="token-1" />
+							API: <input id="apiUrlInput" style="width:180px;padding:3px 8px;font-size:12px;background:var(--card);border:1px solid var(--border);border-radius:4px;color:var(--fg);outline:none" aria-label="URL de l'API" />
+							Token: <input id="apiTokenInput" style="width:160px;padding:3px 8px;font-size:12px;background:var(--card);border:1px solid var(--border);border-radius:4px;color:var(--fg);outline:none" placeholder="token-1" aria-label="Token d'authentification" />
 							<button class="view-btn" id="apiResetData" onclick="window.resetApiData()">↺ Reset</button>
 						</span>
 						<button class="view-btn" id="prdToggle" style="display:none" onclick="window.togglePrdView()">Source</button>
@@ -708,6 +1127,7 @@
 		function selectProject(projectId) {
 			currentProject = projectsData.find(p => p.id === projectId);
 			currentTheme = null;
+			if (window.resetGuideIndex) window.resetGuideIndex();
 			renderNav();
 			renderSidebar();
 			// Auto-select first theme
@@ -723,15 +1143,15 @@
     <h2>${currentProject.icon} ${currentProject.name}</h2>
     <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">${currentProject.description}</p>
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px">
-      <button onclick="window.switchView('prd')" style="padding:4px 10px;font-size:11px;border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);background:transparent;cursor:pointer">📄 PRD</button>
-      <button onclick="window.switchView('openapi')" style="padding:4px 10px;font-size:11px;border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);background:transparent;cursor:pointer">🔌 OpenAPI</button>
-      <button onclick="window.switchView('apiclient')" style="padding:4px 10px;font-size:11px;border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);background:transparent;cursor:pointer">🔌 API Client</button>
+      <button class="sidebar-btn" onclick="window.switchView('prd')">📄 PRD</button>
+      <button class="sidebar-btn" onclick="window.switchView('openapi')">🔌 OpenAPI</button>
+      <button class="sidebar-btn" onclick="window.switchView('apiclient')">⚙️ API Client</button>
     </div>
     <h2 style="margin-top:8px">Thèmes</h2>
     <ul class="theme-list">
       ${currentProject.themes.map(t =>
 				`<li class="${t.id === currentTheme?.id ? 'active' : ''}" onclick="selectTheme('${t.id}')">
-          <span class="status-dot green"></span>${t.name}
+          ${t.palette ? t.palette.map(function(c) { return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + c + ';margin-right:2px;border:1px solid var(--border);vertical-align:middle"></span>'; }).join('') : '<span class="status-dot green"></span>'}${t.name}
           <br><small style="color:var(--text-secondary);font-size:11px">${t.desc}</small>
         </li>`
 			).join('')}
@@ -744,6 +1164,7 @@
 			renderSidebar();
 			if (typeof window.switchView === 'function') window.switchView('preview');
 			if (currentTheme) {
+				showPreviewLoading();
 				const iframe = document.getElementById('previewFrame');
 				iframe.src = currentTheme.file;
 				document.getElementById('statusInfo').innerHTML =
@@ -751,18 +1172,77 @@
 			}
 		}
 
+		function showPreviewLoading() {
+			const overlay = document.getElementById('previewOverlay');
+			const spinner = document.getElementById('previewSpinner');
+			const error = document.getElementById('previewError');
+			error.style.display = 'none';
+			spinner.style.display = 'block';
+			overlay.classList.add('active');
+		}
+
+		function hidePreviewLoading() {
+			const overlay = document.getElementById('previewOverlay');
+			overlay.classList.remove('active');
+		}
+
+		function showPreviewError(msg) {
+			const overlay = document.getElementById('previewOverlay');
+			const spinner = document.getElementById('previewSpinner');
+			const error = document.getElementById('previewError');
+			const msgEl = document.getElementById('previewErrorMsg');
+			spinner.style.display = 'none';
+			error.style.display = 'block';
+			msgEl.textContent = msg || "Impossible de charger l'aperçu";
+			overlay.classList.add('active');
+		}
+
+		window._retryPreview = function () {
+			if (currentTheme) selectTheme(currentTheme.id);
+		};
+
 		function setViewport(width) {
 			const iframe = document.getElementById('previewFrame');
-			iframe.style.width = width;
+			if (width === '100%') {
+				iframe.style.width = '';
+				iframe.style.flex = '';
+			} else {
+				iframe.style.width = width;
+				iframe.style.flex = '0 0 auto';
+			}
 			document.querySelectorAll('.viewport-btn').forEach(b => {
 				b.classList.toggle('active', b.dataset.width === width);
 			});
 		}
 
-		document.addEventListener('DOMContentLoaded', init);
+		document.addEventListener('DOMContentLoaded', function () {
+			const iframe = document.getElementById('previewFrame');
+			iframe.addEventListener('load', hidePreviewLoading);
+			iframe.addEventListener('error', function () {
+				showPreviewError('Erreur réseau lors du chargement de l\'aperçu');
+			});
+			init();
+		});
+
+		document.addEventListener('keydown', function (e) {
+			if (e.ctrlKey && e.key >= '1' && e.key <= '7') {
+				var views = ['preview', 'source', 'prd', 'openapi', 'apiclient', 'guide', 'tester'];
+				var idx = parseInt(e.key) - 1;
+				if (idx < views.length && typeof window.switchView === 'function') {
+					e.preventDefault();
+					window.switchView(views[idx]);
+				}
+			}
+			if (e.key === 'Escape') {
+				var panel = document.getElementById('codePanel');
+				if (panel && panel.classList.contains('active') && typeof window.switchView === 'function') {
+					e.preventDefault();
+					window.switchView('preview');
+				}
+			}
+		});
 	</script>
 	<script type="module" src="./viewer.js"></script>
-	</script>
 </body>
 
 </html>

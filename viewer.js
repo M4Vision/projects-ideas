@@ -121,6 +121,10 @@ window.switchGuideTo = async function (index) {
   await window.switchView('guide')
 }
 
+window.resetGuideIndex = function () {
+  _guideIndex = 0
+}
+
 function showToggle(id, visible) {
   const btn = document.getElementById(id)
   if (btn) btn.style.display = visible ? 'inline-block' : 'none'
@@ -190,9 +194,11 @@ window.switchView = async function (view) {
   const iframe = document.getElementById('previewFrame')
   const panel = document.getElementById('codePanel')
   const content = document.getElementById('codeContent')
+  const wrap = document.querySelector('.preview-frame-wrap')
 
   const isPreview = view === 'preview'
   iframe.style.display = isPreview ? 'block' : 'none'
+  if (wrap) wrap.style.display = isPreview ? '' : 'none'
   panel.classList.toggle('active', !isPreview)
 
   document.querySelectorAll('[data-view]').forEach(b =>
@@ -263,6 +269,14 @@ window.switchView = async function (view) {
       document.getElementById('apiContainer').style.display = 'flex'
       mountOpenApiViewer(_apiSpec)
     } else if (view === 'guide') {
+      const p = window.currentProject
+      const g = p?.guides?.[_guideIndex]
+      if (g?.format === 'learning-path' && g?.manifest) {
+        const mod = await import('/' + g.manifest)
+        content.innerHTML = ''
+        await renderLearningPath(mod.default)
+        return
+      }
       _guideSource = code
       showToggle('guideToggle', true)
       document.getElementById('guideToggle').textContent = 'Source'
@@ -270,10 +284,8 @@ window.switchView = async function (view) {
       await applyMermaid()
       const nav = document.getElementById('codeFileName')
       if (hasGuides()) {
-        const p = window.currentProject
-        const g = p.guides
-        const btns = g.map((_, i) =>
-          `<button class="view-btn ${i === _guideIndex ? 'active' : ''}" onclick="window.switchGuideTo(${i})" style="margin-left:${i > 0 ? '4px' : '0'}">${g[i].name}</button>`
+        const btns = p.guides.map((_, i) =>
+          `<button class="view-btn ${i === _guideIndex ? 'active' : ''}" onclick="window.switchGuideTo(${i})" style="margin-left:${i > 0 ? '4px' : '0'}">${p.guides[i].name}</button>`
         ).join('')
         nav.innerHTML = p.name + ' — Guide <span style="color:var(--text-secondary);font-weight:400">' + btns + '</span>'
       }
@@ -372,4 +384,127 @@ window._runTests = async function () {
 window._abortTests = function () {
   abortTests()
   document.getElementById('testerAbortBtn').style.display = 'none'
+}
+
+let _currentLessonIndex = 0
+let _learningManifest = null
+
+async function renderLearningPath(manifest) {
+  _learningManifest = manifest
+  _currentLessonIndex = 0
+  const content = document.getElementById('codeContent')
+  content.innerHTML = ''
+  showToggle('guideToggle', false)
+  document.getElementById('apiContainer').style.display = 'none'
+  content.style.display = 'block'
+  renderLesson(0)
+}
+
+function renderLesson(index) {
+  _currentLessonIndex = index
+  const manifest = _learningManifest
+  const lesson = manifest.lessons[index]
+  if (!lesson) return
+
+  const container = document.createElement('div')
+  container.className = 'learning-path'
+
+  const nav = document.createElement('div')
+  nav.className = 'lp-nav'
+  manifest.lessons.forEach((l, i) => {
+    const btn = document.createElement('button')
+    btn.className = 'lp-nav-btn' + (i === index ? ' active' : '')
+    btn.textContent = (i + 1) + '. ' + l.title
+    btn.onclick = () => renderLesson(i)
+    nav.appendChild(btn)
+  })
+  container.appendChild(nav)
+
+  const main = document.createElement('div')
+  main.className = 'lp-main'
+
+  const center = document.createElement('div')
+  center.className = 'lp-center'
+  center.innerHTML = `<div class="lp-lesson-header">
+    <h2 class="lp-lesson-title">${lesson.title}</h2>
+    <span class="lp-duration">${lesson.durationMinutes} min</span>
+  </div>
+  <p class="lp-summary">${lesson.summary}</p>
+  <div class="lp-objective">
+    <h3>Objectif</h3>
+    <p>${lesson.summary}</p>
+  </div>`
+
+  const contentDiv = document.createElement('div')
+  contentDiv.className = 'lp-content'
+  center.appendChild(contentDiv)
+
+  const lessonFile = lesson.file
+  fetch('/' + lessonFile).then(r => r.text()).then(async mdText => {
+    contentDiv.innerHTML = await renderMarkdown(mdText)
+  })
+
+  center.innerHTML += `<div class="lp-check-section">
+    <label class="lp-url-label">API Base URL</label>
+    <input type="text" class="tester-input lp-url-input" id="lpApiUrl" value="${window.location.origin}/api" />
+    <button class="view-btn lp-check-btn" onclick="window._runLessonChecks()">${lesson.testCategories.length > 0 ? 'Vérifier mon étape' : 'Vérification disponible après la leçon 3'}</button>
+  </div>`
+
+  main.appendChild(center)
+
+  const sidebar = document.createElement('div')
+  sidebar.className = 'lp-sidebar'
+  const filesUpToHere = manifest.lessons.slice(0, index + 1).flatMap(l => l.files)
+  const uniqueFiles = [...new Set(filesUpToHere)]
+  sidebar.innerHTML = `<h3 class="lp-sidebar-title">Fichiers touchés</h3>
+    <ul class="lp-file-list">
+      ${uniqueFiles.map(f => `<li class="lp-file-item">${f}</li>`).join('')}
+    </ul>
+    <div class="lp-checkpoint-section">
+      <h3>Code complet</h3>
+      <details class="lp-checkpoint-details">
+        <summary>Voir la solution complète</summary>
+        ${manifest.lessons.slice(0, index + 1).map((l, i) => `
+          <p><strong>Leçon ${i + 1} — ${l.title}</strong></p>
+          <p><a href="/${l.checkpoint}" class="lp-checkpoint-link" target="_blank">📁 Dossier d'état →</a></p>
+        `).join('')}
+      </details>
+    </div>`
+  main.appendChild(sidebar)
+
+  container.appendChild(main)
+  const codeContent = document.getElementById('codeContent')
+  codeContent.innerHTML = ''
+  codeContent.appendChild(container)
+}
+
+window._runLessonChecks = async function () {
+  const manifest = _learningManifest
+  const lesson = manifest.lessons[_currentLessonIndex]
+  if (!lesson || lesson.testCategories.length === 0) return
+
+  const url = document.getElementById('lpApiUrl').value.trim()
+  if (!url.startsWith('http')) return
+
+  const checkBtn = document.querySelector('.lp-check-btn')
+  checkBtn.textContent = 'Vérification en cours…'
+  checkBtn.disabled = true
+
+  const result = await runTests(url, lesson.testCategories)
+
+  checkBtn.textContent = 'Vérifier mon étape'
+  checkBtn.disabled = false
+
+  let html = `<div class="lp-check-result"><p>Cette vérification couvre : ${lesson.testCategories.join(', ')}</p>`
+  const allPassed = result.summary.failed === 0 && result.summary.errors === 0
+  if (allPassed) {
+    html += `<p class="lp-check-pass">✅ ${result.summary.passed}/${result.summary.total} tests réussis</p>`
+  } else {
+    html += `<p class="lp-check-fail">❌ ${result.summary.failed} test(s) échoué(s)</p>`
+    html += `<p class="lp-check-hint">Relis l'étape « Vérifie maintenant » puis compare ton fichier avec le code complet.</p>`
+  }
+  html += '</div>'
+  const existing = document.querySelector('.lp-check-result')
+  if (existing) existing.remove()
+  document.querySelector('.lp-check-section')?.insertAdjacentHTML('beforeend', html)
 }
