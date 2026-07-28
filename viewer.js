@@ -11,7 +11,7 @@ let _hlLangs = []
 
 const HIGHLIGHT_LANGS = [
   'html', 'css', 'javascript', 'typescript', 'json', 'markdown',
-  'bash', 'shell', 'sql', 'yaml', 'xml', 'diff',
+  'bash', 'shell', 'sql', 'yaml', 'xml', 'diff', 'php',
 ]
 
 async function ensureHL() {
@@ -103,6 +103,11 @@ window.switchGuide = async function (dir) {
   const p = window.currentProject
   if (!hasGuides()) return
   _guideIndex = (_guideIndex + dir + p.guides.length) % p.guides.length
+  await window.switchView('guide')
+}
+
+window.switchGuideTo = async function (index) {
+  _guideIndex = index
   await window.switchView('guide')
 }
 
@@ -231,7 +236,7 @@ window.switchView = async function (view) {
         const p = window.currentProject
         const g = p.guides
         const btns = g.map((_, i) =>
-          `<button class="view-btn ${i === _guideIndex ? 'active' : ''}" onclick="(async()=>{_guideIndex=${i};await window.switchView('guide')})()" style="margin-left:${i > 0 ? '4px' : '0'}">${g[i].name}</button>`
+          `<button class="view-btn ${i === _guideIndex ? 'active' : ''}" onclick="window.switchGuideTo(${i})" style="margin-left:${i > 0 ? '4px' : '0'}">${g[i].name}</button>`
         ).join('')
         nav.innerHTML = p.name + ' — Guide <span style="color:var(--text-secondary);font-weight:400">' + btns + '</span>'
       }

@@ -13,6 +13,8 @@ var projectsData = [
 		description: 'Un Trello-like pour gérer ses projets avec boards, colonnes, cartes, labels, commentaires et invitations.',
 		icon: '📋',
 		guides: [
+			{ name: 'Symfony', file: 'protask/guides/symfony/index.md' },
+			{ name: 'Laravel', file: 'protask/guides/laravel/index.md' },
 			{ name: 'NestJS', file: 'protask/guides/nestjs/index.md' },
 			{ name: 'AdonisJS', file: 'protask/guides/adonis/index.md' },
 		],
