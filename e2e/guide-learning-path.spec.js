@@ -1,4 +1,15 @@
 import { test, expect } from '@playwright/test';
+import fs from 'fs';
+
+function stubTesterModule(withSpy) {
+  const spySetup = withSpy ? 'window.__testerCalls = window.__testerCalls || [];\n' : ''
+  const spyBody = withSpy
+    ? 'window.__testerCalls.push({ baseUrl, allowedCategories });\n  '
+    : ''
+  return `${spySetup}export async function runTests(baseUrl, allowedCategories) {
+  ${spyBody}return { summary: { total: 1, passed: 1, failed: 0, errors: 0 }, categories: [] };
+}
+export function abortTests() {}`}
 
 test.describe('Guide learning path — test runner categories', () => {
 
@@ -94,5 +105,55 @@ test.describe('Guide learning path — viewer', () => {
     expect(titleAfter).not.toBe(titleBefore)
     const activeCount = await page.locator('.lp-nav-btn.active').count()
     expect(activeCount).toBe(1)
+  })
+})
+
+test.describe('Guide learning path — step verification', () => {
+
+  test('lesson 03 verification passes Authentification category to runTests', async ({ page }) => {
+    const body = stubTesterModule(true)
+    await page.route(/\/protask\/api\/tester\.js(\?.*)?$/, (route) => route.fulfill({ body, contentType: 'application/javascript' }))
+
+    await page.goto('/')
+    await page.waitForFunction(() => !!window.switchView)
+    await page.evaluate(() => { window.switchView('guide'); window.switchGuideTo(3) })
+    await page.locator('.lp-nav-btn').nth(2).click()
+    await page.fill('#lpApiUrl', 'http://localhost:3333/api')
+    await page.click('.lp-check-btn')
+    await page.waitForFunction(() => window.__testerCalls?.length > 0, { timeout: 5000 })
+    const calls = await page.evaluate(() => window.__testerCalls)
+    expect(calls.length).toBe(1)
+    expect(calls[0].allowedCategories).toEqual(['Authentification'])
+  })
+
+  test('lesson 06 verification passes Authentification and Boards categories', async ({ page }) => {
+    const body = stubTesterModule(true)
+    await page.route(/\/protask\/api\/tester\.js(\?.*)?$/, (route) => route.fulfill({ body, contentType: 'application/javascript' }))
+
+    await page.goto('/')
+    await page.waitForFunction(() => !!window.switchView)
+    await page.evaluate(() => { window.switchView('guide'); window.switchGuideTo(3) })
+    await page.locator('.lp-nav-btn').nth(5).click()
+    await page.fill('#lpApiUrl', 'http://localhost:3333/api')
+    await page.click('.lp-check-btn')
+    await page.waitForFunction(() => window.__testerCalls?.length > 0, { timeout: 5000 })
+    const calls = await page.evaluate(() => window.__testerCalls)
+    expect(calls.length).toBe(1)
+    expect(calls[0].allowedCategories).toEqual(['Authentification', 'Boards'])
+  })
+
+  test('verification result displays categories covered in the DOM', async ({ page }) => {
+    const body = stubTesterModule(false)
+    await page.route(/\/protask\/api\/tester\.js(\?.*)?$/, (route) => route.fulfill({ body, contentType: 'application/javascript' }))
+
+    await page.goto('/')
+    await page.waitForFunction(() => !!window.switchView)
+    await page.evaluate(() => { window.switchView('guide'); window.switchGuideTo(3) })
+    await page.locator('.lp-nav-btn').nth(5).click()
+    await page.fill('#lpApiUrl', 'http://localhost:3333/api')
+    await page.click('.lp-check-btn')
+    await expect(page.locator('.lp-check-result')).toBeVisible()
+    await expect(page.locator('.lp-check-result')).toContainText('Authentification')
+    await expect(page.locator('.lp-check-result')).toContainText('Boards')
   })
 })
