@@ -529,14 +529,20 @@
 			height: 4px;
 			background: var(--border);
 			border-radius: 2px;
-			overflow: hidden
+			overflow: hidden;
+			position: relative
 		}
 		.tester-progress-fill {
 			height: 100%;
-			background: var(--accent);
+			width: 40%;
+			background: linear-gradient(90deg, var(--accent), var(--accent-hover));
 			border-radius: 2px;
-			width: 0;
-			transition: width .3s
+			position: absolute;
+			animation: tester-indeterminate 1.5s ease-in-out infinite
+		}
+		@keyframes tester-indeterminate {
+			0% { left: -40% }
+			100% { left: 100% }
 		}
 		.tester-category {
 			margin-bottom: 8px;

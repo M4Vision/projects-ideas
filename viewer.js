@@ -2,7 +2,7 @@ import { createHighlighter } from 'shiki'
 import MarkdownIt from 'markdown-it'
 import mermaid from 'mermaid'
 import { mountOpenApiViewer } from './openapi-viewer.js'
-import { runTests } from './protask/api/tester.js'
+import { runTests, abortTests } from './protask/api/tester.js'
 
 mermaid.initialize({ startOnLoad: false, theme: 'dark' })
 
@@ -26,7 +26,6 @@ async function ensureHL() {
   }
   return _highlighter
 }
-window.__getHL = () => _highlighter
 
 const md = new MarkdownIt({
   html: true,
@@ -335,7 +334,19 @@ window._runTests = async function () {
       html += `<span class="tester-test-name">${test.name}</span>`
       html += `<span class="tester-test-duration">${test.duration}ms</span>`
       if (test.error) {
-        html += `<div class="tester-test-error">${test.error.message}</div>`
+        html += `<div class="tester-test-error">`
+        html += `<div>${test.error.message}</div>`
+        if (test.error.expected || test.error.actual) {
+          html += `<div style="margin-top:4px;display:flex;gap:12px;font-size:11px">`
+          if (test.error.expected !== undefined && test.error.expected !== '') {
+            html += `<span style="color:#22C55E">attendu: ${test.error.expected}</span>`
+          }
+          if (test.error.actual !== undefined && test.error.actual !== '') {
+            html += `<span style="color:#e06c75">reçu: ${test.error.actual}</span>`
+          }
+          html += `</div>`
+        }
+        html += `</div>`
       }
       html += `</div>`
     }
@@ -358,8 +369,7 @@ window._runTests = async function () {
   results.innerHTML = html
 }
 
-window._abortTests = async function () {
-  const { abortTests } = await import('./protask/api/tester.js')
+window._abortTests = function () {
   abortTests()
   document.getElementById('testerAbortBtn').style.display = 'none'
 }
