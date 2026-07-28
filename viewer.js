@@ -472,7 +472,10 @@ function renderLesson(index) {
         <summary>Voir la solution complète</summary>
         ${manifest.lessons.slice(0, index + 1).map((l, i) => `
           <p><strong>Leçon ${i + 1} — ${l.title}</strong></p>
-          <p><a href="/${l.checkpoint}" class="lp-checkpoint-link" target="_blank">📁 Dossier d'état →</a></p>
+          <ul class="lp-file-list">
+            ${l.files.map(f => `<li class="lp-file-item"><a href="/${l.checkpoint}${f}" target="_blank" class="lp-checkpoint-link">${f}</a></li>`).join('')}
+          </ul>
+          <p><a href="/${l.checkpoint}README.md" class="lp-checkpoint-link" target="_blank">📄 Lire le README du checkpoint →</a></p>
         `).join('')}
       </details>
     </div>`
