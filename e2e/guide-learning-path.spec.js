@@ -106,6 +106,35 @@ test.describe('Guide learning path — viewer', () => {
     const activeCount = await page.locator('.lp-nav-btn.active').count()
     expect(activeCount).toBe(1)
   })
+
+  test('checkpoint file link opens file content in center pane', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForFunction(() => !!window.switchView)
+    await page.evaluate(() => { window.switchView('guide'); window.switchGuideTo(3) })
+    const details = page.locator('.lp-checkpoint-details')
+    await details.locator('summary').click()
+    const fileLink = details.locator('.lp-file-item a').first()
+    await expect(fileLink).toBeVisible()
+    const fileName = await fileLink.textContent()
+    await fileLink.click()
+    await expect(page.locator('.lp-file-viewer')).toBeVisible()
+    await expect(page.locator('.lp-file-toolbar-name')).toContainText(fileName.trim())
+    await expect(page.locator('.lp-file-toolbar')).toContainText('Retour à la leçon')
+    await expect(page.locator('.lp-file-viewer pre')).toBeVisible()
+  })
+
+  test('checkpoint file viewer back button restores lesson', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForFunction(() => !!window.switchView)
+    await page.evaluate(() => { window.switchView('guide'); window.switchGuideTo(3) })
+    const details = page.locator('.lp-checkpoint-details')
+    await details.locator('summary').click()
+    await details.locator('.lp-file-item a').first().click()
+    await expect(page.locator('.lp-file-viewer')).toBeVisible()
+    await page.locator('.lp-file-toolbar .view-btn').first().click()
+    await expect(page.locator('.lp-lesson-title')).toBeVisible()
+    await expect(page.locator('.lp-file-viewer')).toHaveCount(0)
+  })
 })
 
 test.describe('Guide learning path — quizzes', () => {
