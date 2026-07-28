@@ -272,7 +272,7 @@ window.switchView = async function (view) {
       const p = window.currentProject
       const g = p?.guides?.[_guideIndex]
       if (g?.format === 'learning-path' && g?.manifest) {
-        const mod = await import('/' + g.manifest)
+        const mod = await import(/* @vite-ignore */ '/' + g.manifest)
         content.innerHTML = ''
         await renderLearningPath(mod.default)
         return
@@ -565,7 +565,7 @@ window._viewCheckpointFile = async function (path) {
   const center = document.querySelector('.lp-center')
   if (!center) return
   try {
-    const res = await fetch(path)
+    const res = await fetch(path + '?raw')
     if (!res.ok) throw new Error('HTTP ' + res.status)
     const code = await res.text()
     const ext = path.split('.').pop() || 'text'
