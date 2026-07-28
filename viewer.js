@@ -450,11 +450,13 @@ function renderLesson(index) {
     }
   })
 
-  center.insertAdjacentHTML('beforeend', `<div class="lp-check-section">
-    <label class="lp-url-label">API Base URL</label>
-    <input type="text" class="tester-input lp-url-input" id="lpApiUrl" value="${window.location.origin}/api" />
-    <button class="view-btn lp-check-btn" onclick="window._runLessonChecks()">${lesson.testCategories.length > 0 ? 'Vérifier mon étape' : 'Vérification disponible après la leçon 3'}</button>
-  </div>`)
+  if (lesson.testCategories.length > 0) {
+    center.insertAdjacentHTML('beforeend', `<div class="lp-check-section">
+      <label class="lp-url-label">API Base URL</label>
+      <input type="text" class="tester-input lp-url-input" id="lpApiUrl" value="${window.location.origin}/api" />
+      <button class="view-btn lp-check-btn" onclick="window._runLessonChecks()">Vérifier mon étape</button>
+    </div>`)
+  }
 
   main.appendChild(center)
 

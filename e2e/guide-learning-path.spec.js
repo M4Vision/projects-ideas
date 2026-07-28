@@ -94,6 +94,14 @@ test.describe('Guide learning path — viewer', () => {
     await expect(page.locator('.lp-check-btn')).toContainText('Vérifier mon étape')
   })
 
+  test('learning path hides check section for lessons without tests', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForFunction(() => !!window.switchView)
+    await page.evaluate(() => { window.switchView('guide'); window.switchGuideTo(3) })
+    await page.locator('.lp-nav-btn').first().click()
+    await expect(page.locator('.lp-check-section')).toHaveCount(0)
+  })
+
   test('clicking lesson 3 changes title and nav active state', async ({ page }) => {
     await page.goto('/')
     await page.waitForFunction(() => !!window.switchView)
