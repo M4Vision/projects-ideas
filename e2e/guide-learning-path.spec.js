@@ -239,3 +239,40 @@ test.describe('Guide learning path — step verification', () => {
     await expect(page.locator('.lp-check-result')).toContainText('Boards')
   })
 })
+
+test.describe('Guide learning path — Vite checkpoint serving', () => {
+
+  test('serves .ts checkpoint file as raw text (not compiled by Vite)', async ({ page }) => {
+    await page.goto('/')
+    const text = await page.evaluate(async () => {
+      const r = await fetch('/protask/guides/adonis/checkpoints/03-authentication/app/controllers/AuthController.ts')
+      return r.text()
+    })
+    expect(text).toContain('import { HttpContext }')
+    expect(text).toContain('export default class AuthController')
+    expect(text).not.toContain('"import {')
+    const lines = text.split('\n')
+    expect(lines.length).toBeGreaterThan(5)
+  })
+
+  test('serves .js checkpoint file with unresolved imports as raw text', async ({ page }) => {
+    await page.goto('/')
+    const text = await page.evaluate(async () => {
+      const r = await fetch('/protask/guides/adonis/checkpoints/01-start/adonisrc.js')
+      return r.text()
+    })
+    expect(text).toContain("import('./start/routes.js')")
+    expect(text).not.toMatch(/Failed to resolve import/)
+    expect(text).toContain('export default {')
+  })
+
+  test('serves .md checkpoint file as raw markdown', async ({ page }) => {
+    await page.goto('/')
+    const text = await page.evaluate(async () => {
+      const r = await fetch('/protask/guides/adonis/checkpoints/03-authentication/README.md')
+      return r.text()
+    })
+    expect(text).toContain('Checkpoint: 03-authentication')
+    expect(text).not.toContain('"Checkpoint:')
+  })
+})
