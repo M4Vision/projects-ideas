@@ -196,6 +196,11 @@ function defineTests() {
       const { data } = await post('/auth/login', { email: 'temp@test.com', password: 'pass1234' })
       expect(data.error).toBeDefined()
     })
+
+    it('inscrit les utilisateurs de démo au démarrage', async () => {
+      const { data } = await post('/auth/login', { email: 'alex@protask.dev', password: 'pass123' })
+      expect(data.user.name).toBe('Alexandre')
+    })
   })
 
   describe('Boards', () => {
@@ -607,6 +612,16 @@ function defineTests() {
       await patch('/invitations/' + invs[0].id, { status: 'accepted' }, sophie.token)
       const { status } = await del('/boards/' + boardId + '/members/' + sophie.user.id, alexToken)
       expect(status).toBe(204)
+    })
+
+    it('retourne 403 si non-propriétaire retire un membre', async () => {
+      await post('/boards/' + boardId + '/invitations', { email: 'sophie@protask.dev' }, alexToken)
+      const { data: invs } = await get('/boards/' + boardId + '/invitations', alexToken)
+      const { data: sophie } = await post('/auth/login', { email: 'sophie@protask.dev', password: 'pass123' })
+      await patch('/invitations/' + invs[0].id, { status: 'accepted' }, sophie.token)
+      const { data: marc } = await post('/auth/login', { email: 'marc@protask.dev', password: 'pass123' })
+      const { status } = await del('/boards/' + boardId + '/members/' + sophie.user.id, marc.token)
+      expect(status).toBe(403)
     })
   })
 }
