@@ -106,7 +106,7 @@ let _baseUrl = ''
 async function post(path, body, token) {
   const headers = { 'Content-Type': 'application/json' }
   if (token) headers['Authorization'] = 'Bearer ' + token
-  const res = await fetch(_baseUrl + path, { method: 'POST', headers, body: JSON.stringify(body) })
+  const res = await fetch(_baseUrl + path, { method: 'POST', headers, body: JSON.stringify(body), signal: AbortSignal.timeout(10000) })
   const data = res.status === 204 ? null : await res.json()
   return { status: res.status, data }
 }
@@ -114,7 +114,7 @@ async function post(path, body, token) {
 async function get(path, token) {
   const headers = {}
   if (token) headers['Authorization'] = 'Bearer ' + token
-  const res = await fetch(_baseUrl + path, { headers })
+  const res = await fetch(_baseUrl + path, { headers, signal: AbortSignal.timeout(10000) })
   const data = res.status === 204 ? null : await res.json()
   return { status: res.status, data }
 }
@@ -122,7 +122,7 @@ async function get(path, token) {
 async function put(path, body, token) {
   const headers = { 'Content-Type': 'application/json' }
   if (token) headers['Authorization'] = 'Bearer ' + token
-  const res = await fetch(_baseUrl + path, { method: 'PUT', headers, body: JSON.stringify(body) })
+  const res = await fetch(_baseUrl + path, { method: 'PUT', headers, body: JSON.stringify(body), signal: AbortSignal.timeout(10000) })
   const data = res.status === 204 ? null : await res.json()
   return { status: res.status, data }
 }
@@ -130,7 +130,7 @@ async function put(path, body, token) {
 async function patch(path, body, token) {
   const headers = { 'Content-Type': 'application/json' }
   if (token) headers['Authorization'] = 'Bearer ' + token
-  const res = await fetch(_baseUrl + path, { method: 'PATCH', headers, body: JSON.stringify(body) })
+  const res = await fetch(_baseUrl + path, { method: 'PATCH', headers, body: JSON.stringify(body), signal: AbortSignal.timeout(10000) })
   const data = res.status === 204 ? null : await res.json()
   return { status: res.status, data }
 }
@@ -138,7 +138,7 @@ async function patch(path, body, token) {
 async function del(path, token) {
   const headers = {}
   if (token) headers['Authorization'] = 'Bearer ' + token
-  const res = await fetch(_baseUrl + path, { method: 'DELETE', headers })
+  const res = await fetch(_baseUrl + path, { method: 'DELETE', headers, signal: AbortSignal.timeout(10000) })
   const data = res.status === 204 ? null : await res.json()
   return { status: res.status, data }
 }
