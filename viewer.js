@@ -409,19 +409,23 @@ function renderLesson(index) {
   const container = document.createElement('div')
   container.className = 'learning-path'
 
-  const nav = document.createElement('div')
-  nav.className = 'lp-nav'
+  const main = document.createElement('div')
+  main.className = 'lp-main'
+
+  const navSidebar = document.createElement('aside')
+  navSidebar.className = 'lp-nav-sidebar'
+  const navTitle = document.createElement('div')
+  navTitle.className = 'lp-nav-title'
+  navTitle.textContent = 'Leçons'
+  navSidebar.appendChild(navTitle)
   manifest.lessons.forEach((l, i) => {
     const btn = document.createElement('button')
     btn.className = 'lp-nav-btn' + (i === index ? ' active' : '')
     btn.textContent = (i + 1) + '. ' + l.title
     btn.onclick = () => renderLesson(i)
-    nav.appendChild(btn)
+    navSidebar.appendChild(btn)
   })
-  container.appendChild(nav)
-
-  const main = document.createElement('div')
-  main.className = 'lp-main'
+  main.appendChild(navSidebar)
 
   const center = document.createElement('div')
   center.className = 'lp-center'
